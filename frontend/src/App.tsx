@@ -1,0 +1,131 @@
+import { Suspense, lazy } from "react";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+
+import Layout from "@/components/Layout";
+import Login from "@/pages/Login";
+import { Loading } from "@/components/ui";
+import { useAuth } from "@/lib/auth";
+
+// كل شاشة بتتحمّل لوحدها — أول فتح للنظام بيبقى أسرع
+const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const TapeChart = lazy(() => import("@/pages/TapeChart"));
+const FrontDesk = lazy(() => import("@/pages/FrontDesk"));
+const Guests = lazy(() => import("@/pages/Guests"));
+const Pos = lazy(() => import("@/pages/Pos"));
+const Housekeeping = lazy(() => import("@/pages/Housekeeping"));
+const Reports = lazy(() => import("@/pages/Reports"));
+const Settings = lazy(() => import("@/pages/Settings"));
+
+function FullScreenLoading() {
+  return (
+    <div className="h-screen w-screen grid place-items-center bg-ground">
+      <Loading />
+    </div>
+  );
+}
+
+/** يمنع الدخول لأي شاشة قبل تسجيل الدخول، ويرجّع المستخدم لمكانه بعد الدخول. */
+function Protected({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  const location = useLocation();
+  if (loading) return <FullScreenLoading />;
+  if (!user) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  return <>{children}</>;
+}
+
+function PublicOnly({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  if (loading) return <FullScreenLoading />;
+  if (user) return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
+
+export default function App() {
+  return (
+    <Routes>
+      <Route
+        path="/login"
+        element={
+          <PublicOnly>
+            <Login />
+          </PublicOnly>
+        }
+      />
+
+      <Route
+        element={
+          <Protected>
+            <Layout />
+          </Protected>
+        }
+      >
+        <Route
+          path="/"
+          element={
+            <Suspense fallback={<Loading />}>
+              <Dashboard />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/tape-chart"
+          element={
+            <Suspense fallback={<Loading />}>
+              <TapeChart />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/front-desk"
+          element={
+            <Suspense fallback={<Loading />}>
+              <FrontDesk />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/guests"
+          element={
+            <Suspense fallback={<Loading />}>
+              <Guests />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/pos"
+          element={
+            <Suspense fallback={<Loading />}>
+              <Pos />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/housekeeping"
+          element={
+            <Suspense fallback={<Loading />}>
+              <Housekeeping />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/reports"
+          element={
+            <Suspense fallback={<Loading />}>
+              <Reports />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <Suspense fallback={<Loading />}>
+              <Settings />
+            </Suspense>
+          }
+        />
+      </Route>
+
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}

@@ -1,0 +1,757 @@
+<title>خريطة نظام فينيسيا</title>
+
+<style>
+  /* ————— الألوان: بحيرة وقت الغروب ————— */
+  :root {
+    --ground:      #F1F4F3;
+    --surface:     #FFFFFF;
+    --surface-2:   #E6ECEA;
+    --ink:         #0D2A31;
+    --ink-2:       #375257;
+    --muted:       #6B858A;
+    --line:        #D2DCDA;
+    --line-strong: #97ABAD;
+    --accent:      #0E6F7A;
+    --accent-soft: #DBEDEE;
+    --gold:        #A8762F;
+    --gold-soft:   #F4E9D8;
+    --good:        #2E7350;
+    --bad:         #A8433B;
+
+    --font-ar: "Segoe UI", "Dubai", "Noto Sans Arabic", Tahoma, system-ui, sans-serif;
+    --font-mono: ui-monospace, "Cascadia Mono", Consolas, "Courier New", monospace;
+
+    --w: 1080px;
+    --prose: 68ch;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:      #0A1C21;
+      --surface:     #10262C;
+      --surface-2:   #17343B;
+      --ink:         #E2EDEB;
+      --ink-2:       #AAC1C3;
+      --muted:       #7D999D;
+      --line:        #22434B;
+      --line-strong: #4B6C72;
+      --accent:      #4FC2CC;
+      --accent-soft: #113A42;
+      --gold:        #D6A55E;
+      --gold-soft:   #33291A;
+      --good:        #5CB98A;
+      --bad:         #E0776C;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:      #0A1C21;
+    --surface:     #10262C;
+    --surface-2:   #17343B;
+    --ink:         #E2EDEB;
+    --ink-2:       #AAC1C3;
+    --muted:       #7D999D;
+    --line:        #22434B;
+    --line-strong: #4B6C72;
+    --accent:      #4FC2CC;
+    --accent-soft: #113A42;
+    --gold:        #D6A55E;
+    --gold-soft:   #33291A;
+    --good:        #5CB98A;
+    --bad:         #E0776C;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-ar);
+    font-size: 17px;
+    line-height: 1.75;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    direction: rtl;
+    text-align: right;
+    max-width: var(--w);
+    margin: 0 auto;
+    padding: 0 24px 120px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  /* ————— الترويسة ————— */
+  .masthead {
+    padding: 72px 0 40px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 56px;
+  }
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: .14em;
+    color: var(--accent);
+    margin: 0 0 18px;
+    text-transform: uppercase;
+    direction: ltr;
+    text-align: right;
+  }
+  .masthead h1 {
+    font-size: clamp(34px, 5.4vw, 56px);
+    line-height: 1.18;
+    font-weight: 700;
+    letter-spacing: -.01em;
+    margin: 0 0 20px;
+    text-wrap: balance;
+    max-width: 20ch;
+  }
+  .standfirst {
+    font-size: 20px;
+    line-height: 1.7;
+    color: var(--ink-2);
+    margin: 0;
+    max-width: 58ch;
+  }
+
+  /* ————— الأقسام ————— */
+  section { margin-bottom: 76px; }
+
+  h2 {
+    font-size: 27px;
+    font-weight: 700;
+    line-height: 1.35;
+    margin: 0 0 8px;
+    text-wrap: balance;
+  }
+  .section-note {
+    color: var(--muted);
+    font-size: 15.5px;
+    margin: 0 0 32px;
+    max-width: var(--prose);
+  }
+  h3 {
+    font-size: 19px;
+    font-weight: 700;
+    margin: 40px 0 12px;
+  }
+  p { max-width: var(--prose); margin: 0 0 18px; }
+  .lead { font-size: 18.5px; color: var(--ink-2); }
+
+  strong { font-weight: 700; color: var(--ink); }
+  code, .mono {
+    font-family: var(--font-mono);
+    font-size: .88em;
+    direction: ltr;
+    unicode-bidi: embed;
+    background: var(--surface-2);
+    border-radius: 3px;
+    padding: 1px 5px;
+  }
+
+  /* ————— الرسومات ————— */
+  figure {
+    margin: 0 0 12px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 28px 22px 20px;
+    overflow-x: auto;
+  }
+  figure svg {
+    display: block;
+    width: 100%;
+    min-width: 620px;
+    max-width: 100%;
+    height: auto;
+  }
+  figcaption {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 14.5px;
+    line-height: 1.65;
+    min-width: 620px;
+  }
+
+  /* أنماط عناصر الرسم */
+  .d-box      { fill: var(--surface); stroke: var(--line-strong); stroke-width: 1.2; }
+  .d-box-key  { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.6; }
+  .d-box-warn { fill: var(--gold-soft); stroke: var(--gold); stroke-width: 1.2; }
+  .d-box-mute { fill: var(--surface-2); stroke: var(--line); stroke-width: 1; }
+  .d-title    { fill: var(--ink); font-size: 13px; font-weight: 700; font-family: var(--font-ar); }
+  .d-sub      { fill: var(--muted); font-size: 10.5px; font-family: var(--font-ar); }
+  .d-arrowlbl { fill: var(--ink-2); font-size: 11px; font-family: var(--font-ar); }
+  .d-mono     { fill: var(--ink-2); font-size: 11px; font-family: var(--font-mono); direction: ltr; }
+  .d-accent   { fill: var(--accent); }
+  .d-gold     { fill: var(--gold); }
+  .d-bad      { fill: var(--bad); }
+  .d-good     { fill: var(--good); }
+  .d-line     { stroke: var(--line-strong); stroke-width: 1.4; fill: none; }
+  .d-line-key { stroke: var(--accent); stroke-width: 1.8; fill: none; }
+  .d-dash     { stroke: var(--line-strong); stroke-width: 1.2; fill: none; stroke-dasharray: 4 4; }
+  .d-head-a   { fill: var(--line-strong); }
+  .d-head-k   { fill: var(--accent); }
+  .d-rows     { fill: var(--surface-2); stroke: var(--line); stroke-width: .8; }
+  .d-rowkey   { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.4; }
+
+  /* ————— البطاقات ————— */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 16px;
+    margin: 0 0 28px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 22px 20px;
+  }
+  .card .big {
+    font-family: var(--font-mono);
+    font-size: 30px;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--gold);
+    display: block;
+    margin-bottom: 8px;
+    font-variant-numeric: tabular-nums;
+    direction: ltr;
+    text-align: right;
+  }
+  .card h4 { font-size: 15.5px; margin: 0 0 6px; font-weight: 700; }
+  .card p  { font-size: 14.5px; color: var(--muted); margin: 0; line-height: 1.6; }
+
+  /* ————— الجداول ————— */
+  .table-wrap { overflow-x: auto; margin-bottom: 20px; }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 560px;
+    font-size: 15px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+  }
+  th, td {
+    text-align: right;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+    line-height: 1.6;
+  }
+  th {
+    font-weight: 700;
+    font-size: 13.5px;
+    color: var(--muted);
+    background: var(--surface-2);
+  }
+  tr:last-child td { border-bottom: none; }
+
+  .pill {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+    line-height: 1.6;
+  }
+  .pill-1 { background: var(--accent-soft); color: var(--accent); }
+  .pill-2 { background: var(--surface-2);   color: var(--ink-2); }
+  .pill-done { background: var(--accent-soft); color: var(--accent); }
+  .pill-todo { background: var(--surface-2);   color: var(--muted); }
+
+  /* ————— قائمة الحالة ————— */
+  .status { display: flex; flex-direction: column; gap: 10px; margin-bottom: 26px; }
+  .status-row {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 13px 18px;
+    font-size: 15.5px;
+  }
+  .status-row .what { flex: 1; }
+  .status-row .mark { font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+
+  /* ————— اقتباس / تنبيه ————— */
+  .callout {
+    border-inline-start: 3px solid var(--gold);
+    background: var(--gold-soft);
+    padding: 18px 22px;
+    border-radius: 0 8px 8px 0;
+    margin: 0 0 24px;
+  }
+  .callout p { margin: 0; max-width: none; font-size: 16px; }
+  .callout p + p { margin-top: 12px; }
+
+  ul { padding-inline-start: 22px; max-width: var(--prose); }
+  li { margin-bottom: 8px; }
+
+  hr {
+    border: none;
+    border-top: 1px solid var(--line);
+    margin: 0 0 56px;
+  }
+
+  @media (max-width: 640px) {
+    body { font-size: 16px; }
+    .page { padding: 0 16px 80px; }
+    .masthead { padding-top: 48px; }
+  }
+</style>
+
+<div class="page" lang="ar">
+
+  <header class="masthead">
+    <p class="eyebrow">Venicia Resort Suite</p>
+    <h1>إحنا بنبني إيه بالظبط؟</h1>
+    <p class="standfirst">
+      خريطة النظام كله في صفحة واحدة — من لحظة ما النزيل يحجز لحد ما الفاتورة توصل
+      مصلحة الضرائب، وليه الداتابيز متصمّمة بالشكل ده.
+    </p>
+  </header>
+
+  <!-- ═══════════════ 1. الفكرة في سطر ═══════════════ -->
+  <section>
+    <h2>الفكرة في سطر واحد</h2>
+    <p class="section-note">لو حد سألك في الميتنج «انتوا بتعملوا إيه؟» — ده الرد.</p>
+
+    <p class="lead">
+      فينيسيا دلوقتي بتشتغل بـ <strong>أنظمة متفرقة مش بتكلم بعض</strong>: الحجوزات في
+      مكان، المطعم في مكان، المخزن في كشكول، والحسابات في إكسيل. النظام ده بيحوّلهم
+      لحاجة واحدة — <strong>كل جنيه بيدخل أو يخرج من القرية بيعدّي من نقطة واحدة</strong>.
+    </p>
+
+    <p>
+      والنتيجة العملية إن المالك يقدر يفتح موبايله الساعة 11 بالليل ويعرف: النهاردة
+      الإشغال كان كام، دخل كام، المطعم باع بكام، وفين الفلوس اللي المفروض تكون موجودة
+      ومش موجودة.
+    </p>
+  </section>
+
+  <!-- ═══════════════ 2. العمود الفقري ═══════════════ -->
+  <section>
+    <h2>العمود الفقري — رحلة الجنيه</h2>
+    <p class="section-note">
+      كل حاجة في النظام بتدور حول حاجة واحدة: <strong>حساب النزيل المفتوح (الفوليو)</strong>.
+      ده القلب اللي كل نقاط البيع بتصبّ فيه.
+    </p>
+
+    <figure>
+      <svg viewBox="0 0 960 400" role="img"
+           aria-label="رحلة الحجز من مصادره مروراً بالحجز وحساب النزيل حتى الفاتورة الإلكترونية ومصلحة الضرائب، مع منافذ البيع التي ترحّل على حساب الغرفة وعدّاد الإتاحة وشاشة الحجوزات">
+        <defs>
+          <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5"
+                  markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" class="d-head-a"/>
+          </marker>
+          <marker id="a1k" viewBox="0 0 10 10" refX="9" refY="5"
+                  markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" class="d-head-k"/>
+          </marker>
+        </defs>
+
+        <!-- المسار الرئيسي: يمين ← يسار -->
+        <!-- 1. مصادر الحجز -->
+        <rect x="770" y="52" width="170" height="104" rx="7" class="d-box"/>
+        <text x="855" y="76" text-anchor="middle" class="d-title">مصادر الحجز</text>
+        <text x="855" y="98"  text-anchor="middle" class="d-sub">بوكينج · أجودا · إكسبيديا</text>
+        <text x="855" y="116" text-anchor="middle" class="d-sub">موقع القرية · إير بي إن بي</text>
+        <text x="855" y="134" text-anchor="middle" class="d-sub">الاستقبال · تليفون · حضور</text>
+
+        <!-- 2. الحجز -->
+        <rect x="530" y="70" width="170" height="68" rx="7" class="d-box-key"/>
+        <text x="615" y="98"  text-anchor="middle" class="d-title">الحجز</text>
+        <text x="615" y="118" text-anchor="middle" class="d-sub">سعر كل ليلة على حدة</text>
+
+        <!-- 3. الفوليو -->
+        <rect x="290" y="70" width="170" height="68" rx="7" class="d-box-key"/>
+        <text x="375" y="98"  text-anchor="middle" class="d-title">حساب النزيل</text>
+        <text x="375" y="118" text-anchor="middle" class="d-sub">الفوليو — القلب</text>
+
+        <!-- 4. الفاتورة -->
+        <rect x="50" y="70" width="170" height="68" rx="7" class="d-box"/>
+        <text x="135" y="98"  text-anchor="middle" class="d-title">الفاتورة</text>
+        <text x="135" y="118" text-anchor="middle" class="d-sub">إيصال إلكتروني</text>
+
+        <!-- أسهم المسار -->
+        <line x1="768" y1="104" x2="704" y2="104" class="d-line" marker-end="url(#a1)"/>
+        <text x="736" y="94" text-anchor="middle" class="d-arrowlbl">بيتسجّل</text>
+
+        <line x1="528" y1="104" x2="464" y2="104" class="d-line-key" marker-end="url(#a1k)"/>
+        <text x="496" y="94" text-anchor="middle" class="d-arrowlbl">عند الوصول</text>
+
+        <line x1="288" y1="104" x2="224" y2="104" class="d-line" marker-end="url(#a1)"/>
+        <text x="256" y="94" text-anchor="middle" class="d-arrowlbl">عند المغادرة</text>
+
+        <!-- عدّاد الإتاحة -->
+        <rect x="530" y="198" width="170" height="62" rx="7" class="d-box-warn"/>
+        <text x="615" y="222" text-anchor="middle" class="d-title">عدّاد الإتاحة</text>
+        <text x="615" y="242" text-anchor="middle" class="d-sub">بيتخصم لحظة الحجز</text>
+        <line x1="615" y1="140" x2="615" y2="196" class="d-line" marker-end="url(#a1)"/>
+
+        <!-- شاشة الحجوزات -->
+        <rect x="530" y="306" width="170" height="62" rx="7" class="d-box-mute"/>
+        <text x="615" y="330" text-anchor="middle" class="d-title">شاشة الحجوزات</text>
+        <text x="615" y="350" text-anchor="middle" class="d-sub">بتقرا من العدّاد</text>
+        <line x1="615" y1="304" x2="615" y2="264" class="d-line" marker-end="url(#a1)"/>
+
+        <!-- منافذ البيع -->
+        <rect x="442" y="250" width="58" height="40" rx="5" class="d-box"/>
+        <text x="471" y="275" text-anchor="middle" class="d-sub">المطعم</text>
+        <rect x="378" y="250" width="58" height="40" rx="5" class="d-box"/>
+        <text x="407" y="275" text-anchor="middle" class="d-sub">البار</text>
+        <rect x="314" y="250" width="58" height="40" rx="5" class="d-box"/>
+        <text x="343" y="275" text-anchor="middle" class="d-sub">السبا</text>
+        <rect x="250" y="250" width="58" height="40" rx="5" class="d-box"/>
+        <text x="279" y="275" text-anchor="middle" class="d-sub">الخيام</text>
+
+        <line x1="255" y1="238" x2="495" y2="238" class="d-line"/>
+        <line x1="471" y1="250" x2="471" y2="238" class="d-line"/>
+        <line x1="407" y1="250" x2="407" y2="238" class="d-line"/>
+        <line x1="343" y1="250" x2="343" y2="238" class="d-line"/>
+        <line x1="279" y1="250" x2="279" y2="238" class="d-line"/>
+        <line x1="375" y1="238" x2="375" y2="142" class="d-line-key" marker-end="url(#a1k)"/>
+        <text x="375" y="196" text-anchor="middle" class="d-arrowlbl">بيترحّل على الغرفة</text>
+
+        <!-- مصلحة الضرائب -->
+        <rect x="50" y="198" width="170" height="62" rx="7" class="d-box"/>
+        <text x="135" y="222" text-anchor="middle" class="d-title">مصلحة الضرائب</text>
+        <text x="135" y="242" text-anchor="middle" class="d-sub">طابور إرسال مستقل</text>
+        <line x1="135" y1="140" x2="135" y2="196" class="d-line" marker-end="url(#a1)"/>
+      </svg>
+      <figcaption>
+        المسار بيتقرا من اليمين للشمال. الخط الأزرق هو مسار الفلوس: كل ما النزيل يستهلك
+        حاجة في أي منفذ، الحركة بترجع لحسابه المفتوح. لاحظ إن <strong>الفاتورة والإرسال
+        لمصلحة الضرائب منفصلين</strong> — الفاتورة بتتطبع للنزيل فوراً، والإرسال بيتم في
+        طابور بإعادة محاولة، عشان انقطاع النت مايوقفش الكاشير.
+      </figcaption>
+    </figure>
+  </section>
+
+  <hr>
+
+  <!-- ═══════════════ 3. ليه بيشتروه ═══════════════ -->
+  <section>
+    <h2>ليه المالك هيدفع؟</h2>
+    <p class="section-note">
+      تلات أسباب بس — ومحدش بيشتري نظام عشان «فيه فيتشرز كتير».
+    </p>
+
+    <div class="cards">
+      <div class="card">
+        <span class="big">15–18%</span>
+        <h4>عمولة القنوات</h4>
+        <p>كل حجز جاي من بوكينج بياخد الشريحة دي. محرك حجز على موقعهم = عمولة صفر. النظام بيحسب الرقم ده ويعرضه للمالك بالجنيه.</p>
+      </div>
+      <div class="card">
+        <span class="big">الفرق</span>
+        <h4>بين المفروض والفعلي</h4>
+        <p>المخزن بيقول المفروض اتصرف كام، الجرد بيقول اتصرف فعلاً كام. الفرق ده هو الهالك والسرقة — ومحدش بيشوفه من غير نظام.</p>
+      </div>
+      <div class="card">
+        <span class="big">إلزامي</span>
+        <h4>الفاتورة الإلكترونية</h4>
+        <p>مش رفاهية ولا اختيار. منظومة مصلحة الضرائب مفروضة قانوناً، والنظام بيتكامل معاها من جوه.</p>
+      </div>
+    </div>
+
+    <div class="callout">
+      <p>
+        <strong>في الميتنج، ابدأ بالرقم مش بالفيتشرز.</strong> اسأل المالك: «حضرتك بتدفع
+        كام عمولة لبوكينج في السنة؟» — وسيبه هو اللي يقول الرقم. بعدها كل حاجة تانية بتبقى
+        سهلة.
+      </p>
+    </div>
+  </section>
+
+  <hr>
+
+  <!-- ═══════════════ 4. الداتابيز ═══════════════ -->
+  <section>
+    <h2>ليه الداتابيز متصمّمة كده؟</h2>
+    <p class="section-note">
+      ده الرد على سؤالك: النظام هيشيل ملايين الصفوف — إزاي الصفحة متعلّقش؟
+    </p>
+
+    <p>
+      الفكرة الأساسية: <strong>الصفحة مبتعلّقش بسبب عدد الصفوف، بتعلّق بسبب شغل زيادة</strong>.
+      لو كل ما حد يفتح شاشة الحجز، النظام قعد يعدّي على 3 مليون حجز عشان يشوف الغرفة
+      فاضية ولا لأ — يبقى هيعلّق. الحل مش داتابيز أقوى، الحل إنك متعملش الشغل ده أصلاً.
+    </p>
+
+    <h3>الحيلة الأولى: عدّاد بدل بحث</h3>
+
+    <figure>
+      <svg viewBox="0 0 960 340" role="img"
+           aria-label="مقارنة بين طريقتين للإجابة على سؤال توفر الوحدات: مسح ثلاثة ملايين صف حجز مقابل قراءة صف واحد من عدّاد جاهز">
+        <defs>
+          <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5"
+                  markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" class="d-head-a"/>
+          </marker>
+          <marker id="a2k" viewBox="0 0 10 10" refX="9" refY="5"
+                  markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" class="d-head-k"/>
+          </marker>
+        </defs>
+
+        <line x1="480" y1="14" x2="480" y2="326" class="d-dash"/>
+
+        <!-- ══ اليمين: الطريقة اللي بتعلّق ══ -->
+        <text x="720" y="26" text-anchor="middle" class="d-title d-bad">الطريقة اللي بتعلّق</text>
+
+        <rect x="580" y="48" width="280" height="44" rx="7" class="d-box"/>
+        <text x="720" y="76" text-anchor="middle" class="d-title">في وحدة فاضية يوم 12؟</text>
+
+        <line x1="720" y1="94" x2="720" y2="140" class="d-line" marker-end="url(#a2)"/>
+
+        <rect x="620" y="148" width="200" height="12" rx="2" class="d-rows"/>
+        <rect x="620" y="165" width="200" height="12" rx="2" class="d-rows"/>
+        <rect x="620" y="182" width="200" height="12" rx="2" class="d-rows"/>
+        <rect x="620" y="199" width="200" height="12" rx="2" class="d-rows"/>
+        <rect x="620" y="216" width="200" height="12" rx="2" class="d-rows"/>
+        <rect x="620" y="233" width="200" height="12" rx="2" class="d-rows"/>
+        <text x="720" y="266" text-anchor="middle" class="d-sub">بيمسح كل صفوف الحجوزات</text>
+        <text x="720" y="284" text-anchor="middle" class="d-mono">3,000,000 rows</text>
+
+        <rect x="580" y="296" width="280" height="34" rx="7" class="d-box-mute"/>
+        <text x="720" y="318" text-anchor="middle" class="d-title d-bad">بطيء — وبيبطأ كل سنة</text>
+
+        <!-- ══ الشمال: طريقتنا ══ -->
+        <text x="240" y="26" text-anchor="middle" class="d-title d-accent">الطريقة اللي بنبنيها</text>
+
+        <rect x="100" y="48" width="280" height="44" rx="7" class="d-box"/>
+        <text x="240" y="76" text-anchor="middle" class="d-title">في وحدة فاضية يوم 12؟</text>
+
+        <line x1="240" y1="94" x2="240" y2="140" class="d-line-key" marker-end="url(#a2k)"/>
+
+        <rect x="140" y="148" width="200" height="18" rx="3" class="d-rowkey"/>
+        <text x="240" y="192" text-anchor="middle" class="d-sub">بيقرا صف واحد من عدّاد جاهز</text>
+        <text x="240" y="210" text-anchor="middle" class="d-mono">1 row</text>
+        <text x="240" y="240" text-anchor="middle" class="d-sub">العدّاد بيتحدّث لحظة الحجز</text>
+        <text x="240" y="258" text-anchor="middle" class="d-sub">مش وقت السؤال</text>
+
+        <rect x="100" y="296" width="280" height="34" rx="7" class="d-box-key"/>
+        <text x="240" y="318" text-anchor="middle" class="d-title d-accent">فوري — وبيفضل فوري</text>
+      </svg>
+      <figcaption>
+        الفرق مش في سرعة الجهاز — الفرق في إن الشغل اتعمل مرة واحدة وقت الحجز بدل ما
+        يتعاد في كل سؤال. جدول العدّاد حجمه ثابت وصغير: 6 فئات × 365 يوم =
+        <span class="mono">2,190</span> صف في السنة، مهما كبرت الحجوزات.
+      </figcaption>
+    </figure>
+
+    <h3>الحيلة التانية: احسب بالليل، اقرا بالنهار</h3>
+
+    <figure>
+      <svg viewBox="0 0 960 250" role="img"
+           aria-label="النايت أوديت يقرأ حركات اليوم كاملة مرة واحدة ليلاً ويكتب صف ملخص واحد، فيقرأ داشبورد المالك ثلاثمئة وخمسة وستين صفاً في السنة بدل ملايين الحركات">
+        <defs>
+          <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5"
+                  markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" class="d-head-a"/>
+          </marker>
+          <marker id="a3k" viewBox="0 0 10 10" refX="9" refY="5"
+                  markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" class="d-head-k"/>
+          </marker>
+        </defs>
+
+        <rect x="700" y="52" width="200" height="76" rx="7" class="d-box"/>
+        <text x="800" y="80"  text-anchor="middle" class="d-title">حركات اليوم كلها</text>
+        <text x="800" y="102" text-anchor="middle" class="d-sub">ليالي · فواتير · مدفوعات</text>
+        <text x="800" y="120" text-anchor="middle" class="d-mono">~40,000 rows/day</text>
+
+        <line x1="698" y1="90" x2="604" y2="90" class="d-line" marker-end="url(#a3)"/>
+        <text x="651" y="80" text-anchor="middle" class="d-arrowlbl">مرة واحدة بالليل</text>
+
+        <rect x="400" y="52" width="200" height="76" rx="7" class="d-box-warn"/>
+        <text x="500" y="80"  text-anchor="middle" class="d-title">النايت أوديت</text>
+        <text x="500" y="102" text-anchor="middle" class="d-sub">بيقفل اليوم الفندقي</text>
+        <text x="500" y="120" text-anchor="middle" class="d-sub">ويحسب المؤشرات</text>
+
+        <line x1="398" y1="90" x2="304" y2="90" class="d-line-key" marker-end="url(#a3k)"/>
+        <text x="351" y="80" text-anchor="middle" class="d-arrowlbl">بيكتب صف واحد</text>
+
+        <rect x="100" y="52" width="200" height="76" rx="7" class="d-box-key"/>
+        <text x="200" y="80"  text-anchor="middle" class="d-title">ملخّص اليوم</text>
+        <text x="200" y="102" text-anchor="middle" class="d-sub">إشغال · ADR · RevPAR</text>
+        <text x="200" y="120" text-anchor="middle" class="d-mono">1 row/day</text>
+
+        <line x1="200" y1="130" x2="200" y2="176" class="d-line-key" marker-end="url(#a3k)"/>
+
+        <rect x="60" y="182" width="280" height="50" rx="7" class="d-box"/>
+        <text x="200" y="204" text-anchor="middle" class="d-title">داشبورد المالك</text>
+        <text x="200" y="222" text-anchor="middle" class="d-sub">بيقرا 365 صف في السنة</text>
+      </svg>
+      <figcaption>
+        نفس المبدأ: الشغل التقيل بيتعمل مرة واحدة في وقت مفيش فيه حد شغال. المالك لما
+        يفتح الداشبورد الساعة 11 بالليل، النظام مش بيحسب حاجة — بيقرا أرقام محفوظة جاهزة.
+      </figcaption>
+    </figure>
+
+    <h3>وكمان</h3>
+    <ul>
+      <li><strong>الترقيم بالمؤشر (Keyset)</strong> بدل <span class="mono">OFFSET</span> — الصفحة رقم 5000 بتفتح بنفس سرعة الصفحة رقم 2.</li>
+      <li><strong>الأرصدة محفوظة مش محسوبة</strong> — رصيد النزيل مخزّن جاهز، مفيش <span class="mono">SUM()</span> على مليون صف كل ما تفتح شاشة.</li>
+      <li><strong>أسماء وأسعار الأصناف متكرّرة عمداً جوه سطر الفاتورة</strong> — الفاتورة القديمة تفضل زي ما اتطبعت حتى لو الصنف اتغيّر، والتقارير مبتعملش ربط جداول.</li>
+      <li><strong>فهارس مركّبة مصمّمة على الأسئلة الفعلية</strong> — مش فهرس على كل عمود، فهرس على اللي بيتسأل فعلاً.</li>
+    </ul>
+  </section>
+
+  <hr>
+
+  <!-- ═══════════════ 5. المراحل ═══════════════ -->
+  <section>
+    <h2>ليه بنقسّمه 4 مراحل؟</h2>
+    <p class="section-note">
+      عشان الـ9 موديولات في وثيقة واحدة هيخضّوا العميل — ولأن فيه ترتيب فني إجباري.
+    </p>
+
+    <figure>
+      <svg viewBox="0 0 960 440" role="img"
+           aria-label="أربع مراحل مبنية فوق بعضها، المرحلة الأولى هي الأساس والمراحل التالية تعتمد على البيانات التي تولّدها">
+        <defs>
+          <marker id="a4" viewBox="0 0 10 10" refX="9" refY="5"
+                  markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" class="d-head-a"/>
+          </marker>
+        </defs>
+
+        <!-- المرحلة 1 — الأساس -->
+        <rect x="100" y="350" width="600" height="70" rx="8" class="d-box-key"/>
+        <text x="400" y="378" text-anchor="middle" class="d-title">المرحلة 1 — الأساس</text>
+        <text x="400" y="400" text-anchor="middle" class="d-sub">الحجوزات · نقاط البيع · ربط القنوات · الفاتورة الإلكترونية</text>
+
+        <!-- المرحلة 2 -->
+        <rect x="160" y="250" width="480" height="70" rx="8" class="d-box"/>
+        <text x="400" y="278" text-anchor="middle" class="d-title">المرحلة 2</text>
+        <text x="400" y="300" text-anchor="middle" class="d-sub">المخازن · الوصفات · المشتريات</text>
+
+        <!-- المرحلة 3 -->
+        <rect x="220" y="150" width="360" height="70" rx="8" class="d-box"/>
+        <text x="400" y="178" text-anchor="middle" class="d-title">المرحلة 3</text>
+        <text x="400" y="200" text-anchor="middle" class="d-sub">الحسابات · الموارد البشرية والرواتب</text>
+
+        <!-- المرحلة 4 -->
+        <rect x="280" y="50" width="240" height="70" rx="8" class="d-box"/>
+        <text x="400" y="78" text-anchor="middle" class="d-title">المرحلة 4</text>
+        <text x="400" y="100" text-anchor="middle" class="d-sub">السبا · الأنشطة · CRM</text>
+
+        <!-- أسهم الاعتماد -->
+        <line x1="400" y1="348" x2="400" y2="324" class="d-line" marker-end="url(#a4)"/>
+        <line x1="400" y1="248" x2="400" y2="224" class="d-line" marker-end="url(#a4)"/>
+        <line x1="400" y1="148" x2="400" y2="124" class="d-line" marker-end="url(#a4)"/>
+
+        <!-- عمود الأسباب -->
+        <line x1="720" y1="335" x2="750" y2="335" class="d-dash"/>
+        <text x="850" y="326" text-anchor="middle" class="d-sub">المخازن محتاجة مبيعات</text>
+        <text x="850" y="344" text-anchor="middle" class="d-sub">المطعم عشان تخصم منها</text>
+
+        <line x1="720" y1="235" x2="750" y2="235" class="d-dash"/>
+        <text x="850" y="226" text-anchor="middle" class="d-sub">الحسابات محتاجة إيرادات</text>
+        <text x="850" y="244" text-anchor="middle" class="d-sub">وتكاليف عشان تولّد القيود</text>
+
+        <line x1="720" y1="135" x2="750" y2="135" class="d-dash"/>
+        <text x="850" y="126" text-anchor="middle" class="d-sub">الـ CRM محتاج تاريخ</text>
+        <text x="850" y="144" text-anchor="middle" class="d-sub">إقامات حقيقي يشتغل عليه</text>
+      </svg>
+      <figcaption>
+        الترتيب ده مش تنظيمي — هو <strong>اعتماد فني حقيقي</strong>. المخازن مش هتعرف تخصم
+        من المخزن من غير مبيعات المطعم، والحسابات مش هتعرف تعمل قيود من غير إيرادات
+        وتكاليف. عشان كده المرحلة 1 هي اللي بتتسعّر في العرض، والباقي خارطة طريق.
+      </figcaption>
+    </figure>
+
+    <h3>الـ9 موديولات موزّعين إزاي</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>الموديول</th>
+            <th>المرحلة</th>
+            <th>الحاجة اللي بيحلّها</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>إدارة الحجوزات والفرونت أوفيس</td><td><span class="pill pill-1">1</span></td><td>مين نازل فين وبكام</td></tr>
+          <tr><td>الحجز الإلكتروني وربط القنوات</td><td><span class="pill pill-1">1</span></td><td>وقف تعارض الحجوزات وتقليل العمولة</td></tr>
+          <tr><td>نقاط البيع</td><td><span class="pill pill-1">1</span></td><td>كل بيعة تتسجل وتترحّل على الغرفة</td></tr>
+          <tr><td>الفاتورة الإلكترونية</td><td><span class="pill pill-1">1</span></td><td>التزام قانوني</td></tr>
+          <tr><td>المخازن والتكلفة</td><td><span class="pill pill-2">2</span></td><td>وقف الهالك والسرقة</td></tr>
+          <tr><td>الحسابات</td><td><span class="pill pill-2">3</span></td><td>قوائم مالية بدل إكسيل</td></tr>
+          <tr><td>الموارد البشرية والرواتب</td><td><span class="pill pill-2">3</span></td><td>الحضور والرواتب وتوزيع الخدمة</td></tr>
+          <tr><td>الصيانة والهاوس كيبينج</td><td><span class="pill pill-1">1</span></td><td>حالة الغرفة لايف وتذاكر الصيانة</td></tr>
+          <tr><td>الإدارة والتقارير</td><td><span class="pill pill-1">1</span></td><td>داشبورد المالك والرقابة</td></tr>
+          <tr><td>السبا والأنشطة والـ CRM</td><td><span class="pill pill-2">4</span></td><td>إيراد جانبي وولاء النزيل</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:14.5px;color:var(--muted);">
+      الصيانة والتقارير اتحطوا في المرحلة 1 مع إنهم موديولات 7 و8 في ورقتك — لأن حالة
+      الغرفة جزء أصيل من شاشة الحجوزات، والداشبورد هو اللي بيبيع النظام.
+    </p>
+  </section>
+
+  <hr>
+
+  <!-- ═══════════════ 6. إحنا فين ═══════════════ -->
+  <section>
+    <h2>إحنا واصلين لفين دلوقتي</h2>
+    <p class="section-note">الوضع الحقيقي بدون تجميل.</p>
+
+    <div class="status">
+      <div class="status-row">
+        <span class="pill pill-done">خلص</span>
+        <span class="what">طبقة الداتا كاملة — 43 جدول بالفهارس والقيود، متأكد إنها بتتبني من غير أخطاء</span>
+      </div>
+      <div class="status-row">
+        <span class="pill pill-done">خلص</span>
+        <span class="what">التصميم المحايد: SQLite للعرض · Postgres للتنفيذ بتغيير سطر واحد</span>
+      </div>
+      <div class="status-row">
+        <span class="pill pill-done">خلص</span>
+        <span class="what">قرارات الأداء اللي فوق: عدّاد الإتاحة · جداول الملخّص · الأرصدة المحفوظة</span>
+      </div>
+      <div class="status-row">
+        <span class="pill pill-todo">الجاي</span>
+        <span class="what">محرك الإتاحة والتسعير الموسمي · المصادقة والصلاحيات · سجل التدقيق</span>
+      </div>
+      <div class="status-row">
+        <span class="pill pill-todo">الجاي</span>
+        <span class="what">واجهات الـ API: الحجز · النزول والمغادرة · الفوليو · نقاط البيع</span>
+      </div>
+      <div class="status-row">
+        <span class="pill pill-todo">الجاي</span>
+        <span class="what">سكربت يعبّي سنتين حجوزات وفواتير حقيقية عشان الديمو يثبت السرعة</span>
+      </div>
+      <div class="status-row">
+        <span class="pill pill-todo">الجاي</span>
+        <span class="what">الشاشات: الحجوزات بالسحب والإفلات · الكاشير · داشبورد المالك</span>
+      </div>
+    </div>
+
+    <div class="callout">
+      <p>
+        <strong>الكلام بالصريح عن الوقت:</strong> الـ9 موديولات دول شغل شهور مش أسبوعين.
+        اللي هيبقى جاهز للميتنج هو <strong>المرحلة 1 كنظام شغال حقيقي</strong> — داتابيز
+        حقيقية وحجز حقيقي وفاتورة حقيقية، مش شاشات فاضية.
+      </p>
+      <p>
+        وده مقصود: هو ديمو الميتنج <strong>وأساس المنتج في نفس الوقت</strong>. مش شغل
+        هيترمي بعد العرض.
+      </p>
+    </div>
+  </section>
+
+</div>

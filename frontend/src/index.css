@@ -1,0 +1,216 @@
+@import "tailwindcss";
+
+/* الوضع الليلي بيتفعّل بـ data-theme على عنصر html */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* ═══════════════════════════════════════════════════════
+   نظام تصميم فينيسيا — بحيرة وقت الغروب
+   المرجع: docs/design-system.md
+   ═══════════════════════════════════════════════════════ */
+:root {
+  --ground: #f1f4f3;
+  --surface: #ffffff;
+  --surface-2: #e6ecea;
+  --surface-3: #dae3e0;
+  --ink: #0d2a31;
+  --ink-2: #375257;
+  --muted: #6b858a;
+  --line: #d2dcda;
+  --line-strong: #97abad;
+  --accent: #0e6f7a;
+  --accent-hover: #0b5b64;
+  --accent-soft: #dbedee;
+  --accent-ink: #ffffff;
+  --gold: #a8762f;
+  --gold-soft: #f4e9d8;
+  --sidebar: #0a4e56;
+  --sidebar-ink: #dceeef;
+  --sidebar-active: #0e6f7a;
+
+  /* ألوان الحالات — محجوزة للحالات الفعلية فقط */
+  --st-confirmed: #0e6f7a;
+  --st-checkedin: #2e7350;
+  --st-tentative: #a8762f;
+  --st-checkedout: #6b858a;
+  --st-cancelled: #a8433b;
+  --st-ooo: #97abad;
+
+  /* حالات النظافة */
+  --hk-clean: #2e7350;
+  --hk-dirty: #a8762f;
+  --hk-cleaning: #0e6f7a;
+  --hk-inspected: #4f8f9a;
+
+  --good: #2e7350;
+  --warn: #a8762f;
+  --bad: #a8433b;
+
+  --font-ar: "Segoe UI", "Dubai", "Noto Sans Arabic", Tahoma, system-ui, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", Consolas, "Courier New", monospace;
+}
+
+[data-theme="dark"] {
+  --ground: #0a1c21;
+  --surface: #10262c;
+  --surface-2: #17343b;
+  --surface-3: #1e424a;
+  --ink: #e2edeb;
+  --ink-2: #aac1c3;
+  --muted: #7d999d;
+  --line: #22434b;
+  --line-strong: #4b6c72;
+  --accent: #4fc2cc;
+  --accent-hover: #6fd3db;
+  --accent-soft: #113a42;
+  --accent-ink: #06232a;
+  --gold: #d6a55e;
+  --gold-soft: #33291a;
+  --sidebar: #071b1f;
+  --sidebar-ink: #bcd8da;
+  --sidebar-active: #124a52;
+
+  --st-confirmed: #4fc2cc;
+  --st-checkedin: #5cb98a;
+  --st-tentative: #d6a55e;
+  --st-checkedout: #7d999d;
+  --st-cancelled: #e0776c;
+  --st-ooo: #4b6c72;
+
+  --hk-clean: #5cb98a;
+  --hk-dirty: #d6a55e;
+  --hk-cleaning: #4fc2cc;
+  --hk-inspected: #7fb8c1;
+
+  --good: #5cb98a;
+  --warn: #d6a55e;
+  --bad: #e0776c;
+}
+
+/* ربط المتغيّرات بأدوات Tailwind — inline عشان تتبع تغيّر الثيم لحظياً */
+@theme inline {
+  --color-ground: var(--ground);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-ink: var(--sidebar-ink);
+  --color-sidebar-active: var(--sidebar-active);
+  --color-good: var(--good);
+  --color-warn: var(--warn);
+  --color-bad: var(--bad);
+  --color-st-confirmed: var(--st-confirmed);
+  --color-st-checkedin: var(--st-checkedin);
+  --color-st-tentative: var(--st-tentative);
+  --color-st-checkedout: var(--st-checkedout);
+  --color-st-cancelled: var(--st-cancelled);
+  --color-st-ooo: var(--st-ooo);
+  --color-hk-clean: var(--hk-clean);
+  --color-hk-dirty: var(--hk-dirty);
+  --color-hk-cleaning: var(--hk-cleaning);
+  --color-hk-inspected: var(--hk-inspected);
+
+  --font-sans: var(--font-ar);
+  --font-mono: var(--font-mono);
+
+  --radius-card: 8px;
+  --radius-btn: 6px;
+  --radius-bar: 4px;
+}
+
+/* ═══════════════════════════════════════════════════════ الأساسيات */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-ar);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden; /* الشاشات بتـscroll جوّه نفسها */
+}
+
+/* الأرقام والأكواد دايماً إنجليزية ومتراصة */
+.num,
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  direction: ltr;
+  unicode-bidi: embed;
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+}
+
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* شريط تمرير هادي */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: 6px;
+  border: 2px solid var(--ground);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+/* التشطيب المائل للوحدات خارج الخدمة */
+.hatched {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 5px,
+    var(--st-ooo) 5px,
+    var(--st-ooo) 6px
+  );
+  background-color: var(--surface-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
