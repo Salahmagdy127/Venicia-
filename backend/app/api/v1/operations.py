@@ -413,6 +413,10 @@ class AuditWarnings(ApiModel):
     open_shifts: int = 0
     in_house_without_unit: int = 0
     overdue_checkouts: int = 0
+    #: أيام مبيوعة فوق السعة في الشهر الجاي — محتاجة نقل أو ترقية
+    oversold_days: int = 0
+    #: طلبات انتظار بقى فيه لها مكان — مكالمة بتتحوّل لحجز
+    waitlist_ready: int = 0
 
 
 class NightAuditOut(ApiModel):

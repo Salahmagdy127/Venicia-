@@ -67,6 +67,24 @@ BLOCKING_RESERVATION_STATUSES: frozenset[ReservationStatus] = frozenset(
 )
 
 
+class WaitlistStatus(StrEnum):
+    """رحلة الطلب في قايمة الانتظار."""
+
+    WAITING = "WAITING"              # مستنّي مكان يفضى
+    OFFERED = "OFFERED"              # اتعرض عليه وبنستنى رده — الوحدة محجوزة مؤقتاً
+    CONVERTED = "CONVERTED"          # اتحوّل لحجز فعلي
+    EXPIRED = "EXPIRED"              # التواريخ عدّت من غير ما نلاقي مكان
+    CANCELLED = "CANCELLED"          # النزيل عدل أو الموظف شطبه
+
+
+class WaitlistPriority(StrEnum):
+    """أولوية الاتصال لما يفضى مكان."""
+
+    NORMAL = "NORMAL"                # عادي
+    HIGH = "HIGH"                    # مهم
+    VIP = "VIP"                      # نزيل مميز أو متكرر
+
+
 class BookingSource(StrEnum):
     """مصدر الحجز — ده اللي بيحسب عمولة القنوات وبيثبت قيمة الـ Booking Engine."""
 

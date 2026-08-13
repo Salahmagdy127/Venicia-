@@ -68,4 +68,7 @@ def next_number(
     row.last_number += 1
     db.flush()
 
-    return f"{row.prefix}-{year}-{row.last_number:0{row.padding}d}"
+    # البادئة اللي المنادي طلبها بتكسب: أوردرات المطعم والبار بتاخد بادئة
+    # المنفذ بتاعها، لكن العدّاد يفضل واحد فمفيش رقمين متكررين بين المنافذ.
+    label = prefix or row.prefix or default_prefix
+    return f"{label}-{year}-{row.last_number:0{row.padding}d}"

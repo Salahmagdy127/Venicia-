@@ -62,6 +62,16 @@ class DayAvailability:
             return 0.0
         return round(self.sold_units / sellable * 100, 2)
 
+    @property
+    def oversold_by(self) -> int:
+        """كام وحدة اتباعت فوق السعة الحقيقية.
+
+        ده الرقم اللي المدير لازم يشوفه كل يوم: أكبر من صفر يعني فيه نزلاء
+        هيوصلوا ومفيش لهم مكان، ولازم يتنقلوا لفئة أعلى أو لمنشأة تانية.
+        """
+        sellable = self.total_units - self.out_of_order
+        return max(0, self.sold_units + self.held_units - sellable)
+
 
 def date_range(start: date, end: date) -> list[date]:
     """ليالي الإقامة: من الوصول (شامل) للمغادرة (غير شامل).
@@ -423,20 +433,28 @@ def move(
 def set_overbooking(
     db: Session,
     property_id: int,
-    category_id: int,
     start: date,
     end: date,
     limit: int,
+    category_ids: Iterable[int] | None = None,
 ) -> int:
-    """تحديد حد التجاوز المسموح — Overbooking control."""
+    """تحديد حد التجاوز المسموح — Overbooking control.
+
+    الحد ده بيتضاف للسعة في الحارس الذرّي، يعني بيسمح ببيع وحدات فوق
+    الموجود فعلاً — وده مقصود: نسبة ثابتة من الحجوزات بتتلغي أو مبتحضرش،
+    فالبيع بالسعة الحقيقية بالظبط معناه غرف فاضية كل ليلة.
+    """
+    conditions = [
+        AvailabilityCalendar.property_id == property_id,
+        AvailabilityCalendar.stay_date >= start,
+        AvailabilityCalendar.stay_date < end,
+    ]
+    if category_ids:
+        conditions.append(AvailabilityCalendar.unit_category_id.in_(list(category_ids)))
+
     result = db.execute(
         update(AvailabilityCalendar)
-        .where(
-            AvailabilityCalendar.property_id == property_id,
-            AvailabilityCalendar.unit_category_id == category_id,
-            AvailabilityCalendar.stay_date >= start,
-            AvailabilityCalendar.stay_date < end,
-        )
+        .where(and_(*conditions))
         .values(overbooking_limit=limit, updated_at=datetime.now(timezone.utc))
     )
     return result.rowcount or 0

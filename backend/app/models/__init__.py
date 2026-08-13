@@ -35,6 +35,7 @@ from app.models.reservations import (
     Reservation,
     ReservationNight,
     ReservationUnit,
+    WaitlistEntry,
 )
 from app.models.security import (
     AuditLog,
@@ -78,6 +79,7 @@ __all__ = [
     "Reservation",
     "ReservationUnit",
     "ReservationNight",
+    "WaitlistEntry",
     # folio
     "Folio",
     "FolioLine",

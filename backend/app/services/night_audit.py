@@ -39,6 +39,7 @@ from app.models.enums import (
     FolioStatus,
     PosOrderStatus,
     ReservationStatus,
+    WaitlistStatus,
 )
 from app.models.folio import Folio
 from app.models.guests import Guest
@@ -46,7 +47,9 @@ from app.models.organization import Property
 from app.models.pos import Outlet, PosOrder, Shift
 from app.models.reservations import Reservation, ReservationNight, ReservationUnit
 from app.models.units import Unit, UnitCategory
+from app.services import availability as av
 from app.services import reservations as res_svc
+from app.services import waitlist as wl
 
 TWO = Decimal("0.01")
 
@@ -542,6 +545,22 @@ def collect_warnings(db: Session, property_id: int, business_date: date) -> dict
     ).scalar_one()
     warnings["overdue_checkouts"] = int(overdue)
 
+    # بيع زايد فوق السعة الحقيقية في الشهر الجاي — نزلاء جايين ومفيش لهم مكان
+    horizon = business_date + timedelta(days=30)
+    warnings["oversold_days"] = sum(
+        1
+        for row in av.get_availability(db, property_id, business_date, horizon)
+        if row.oversold_by > 0
+    )
+
+    # طلبات انتظار بقى فيه لها مكان — مكالمة تليفون بتتحوّل لحجز
+    pending = wl.list_entries(
+        db, property_id, statuses=[WaitlistStatus.WAITING], arrival_from=business_date
+    )
+    warnings["waitlist_ready"] = sum(
+        1 for match in wl.match_all(db, property_id, pending).values() if match is not None
+    )
+
     return warnings
 
 
@@ -595,6 +614,10 @@ def run(
 
     try:
         no_shows, _penalties = mark_no_shows(db, property_id, target)
+        # عدم الحضور بيرجّع إتاحة، فده أنسب وقت لتنضيف قائمة الانتظار:
+        # العروض المنتهية بترجع وحداتها للبيع، والطلبات اللي فات ميعادها بتتقفل
+        wl.expire_offers(db, property_id)
+        wl.expire_stale(db, property_id, today=target)
         nights_posted, room_revenue = post_pending_nights(db, property_id, target)
         compute_statistics(db, property_id, target)
         refresh_departed_guests(db, property_id, target)

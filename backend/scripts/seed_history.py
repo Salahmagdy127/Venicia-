@@ -40,6 +40,7 @@ from app.models.enums import (
     SettlementType,
     UnitCondition,
 )
+from app.models.billing import DocumentSequence
 from app.models.folio import Folio, FolioLine, Payment
 from app.models.guests import Guest
 from app.models.organization import Property
@@ -53,6 +54,7 @@ from app.models.reservations import (
 )
 from app.models.security import User
 from app.models.units import Unit, UnitCategory
+from app.services import sequences
 
 RNG = random.Random(20260812)  # ثابت — نفس الداتا في كل تشغيل
 
@@ -1118,6 +1120,67 @@ def refresh_folio_totals(db: Session) -> int:
     return len(rows)
 
 
+# ═══════════════════════════════════════════ ضبط عدّادات الترقيم
+#: نوع المستند ← العمود اللي فيه الكود
+CODE_SOURCES: list[tuple[str, object]] = [
+    ("RESERVATION", Reservation.code),
+    ("FOLIO", Folio.code),
+    ("PAYMENT", Payment.code),
+    ("POS_ORDER", PosOrder.code),
+]
+
+
+def prime_sequences(db: Session, property_id: int) -> int:
+    """بيوصّل عدّادات الترقيم لآخر رقم موجود فعلاً في الداتا.
+
+    السكربت بيولّد الأكواد بنفسه للسرعة، فجدول العدّادات بيفضل فاضي. من غير
+    الخطوة دي أول حجز يتعمل من الشاشة بياخد ``VNC-2026-000001`` جنب حجوزات
+    وصلت لـ 016829 — شكل غلط قدام العميل، وفي الآخر تصادم في كود مكرّر.
+    """
+    updated = 0
+    for doc_type, column in CODE_SOURCES:
+        prefix_default, padding = sequences.DEFAULTS[doc_type]
+        highest: dict[int, int] = {}
+        prefixes: dict[int, str] = {}
+
+        for code in db.execute(select(column)).scalars():
+            if not code:
+                continue
+            head, _, tail = code.rpartition("-")
+            prefix, _, year_part = head.rpartition("-")
+            if not tail.isdigit() or not year_part.isdigit():
+                continue
+            year = int(year_part)
+            number = int(tail)
+            if number > highest.get(year, 0):
+                highest[year] = number
+            prefixes.setdefault(year, prefix or prefix_default)
+
+        for year, last in highest.items():
+            row = db.execute(
+                select(DocumentSequence).where(
+                    DocumentSequence.property_id == property_id,
+                    DocumentSequence.doc_type == doc_type,
+                    DocumentSequence.period_year == year,
+                )
+            ).scalar_one_or_none()
+            if row is None:
+                row = DocumentSequence(
+                    property_id=property_id,
+                    doc_type=doc_type,
+                    prefix=prefix_default,
+                    period_year=year,
+                    padding=padding,
+                    last_number=0,
+                )
+                db.add(row)
+            if last > row.last_number:
+                row.last_number = last
+                updated += 1
+    db.flush()
+    return updated
+
+
 # ═══════════════════════════════════════════════════════════ التشغيل
 def run(years_back: int = 2, days_forward: int = 90, guest_count: int = 3500) -> None:
     db = SessionLocal()
@@ -1143,6 +1206,7 @@ def run(years_back: int = 2, days_forward: int = 90, guest_count: int = 3500) ->
         print("تحديث إحصاءات النزلاء وأرصدة الحسابات...")
         guests_updated = refresh_guest_stats(db)
         folios_balanced = refresh_folio_totals(db)
+        counters = prime_sequences(db, ctx.prop.id)
         db.commit()
 
         print()
@@ -1152,6 +1216,7 @@ def run(years_back: int = 2, days_forward: int = 90, guest_count: int = 3500) ->
             print(f"  {key:<22} {value:,}")
         print(f"  نزلاء بإحصاءات محدّثة  {guests_updated:,}")
         print(f"  حسابات اتظبطت أرصدتها  {folios_balanced:,}")
+        print(f"  عدّادات ترقيم اتظبطت   {counters:,}")
         total = sum(counts.values()) + guest_count
         print("─" * 52)
         print(f"  إجمالي الصفوف          {total:,}")

@@ -10,6 +10,7 @@ import { useAuth } from "@/lib/auth";
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
 const TapeChart = lazy(() => import("@/pages/TapeChart"));
 const FrontDesk = lazy(() => import("@/pages/FrontDesk"));
+const Inventory = lazy(() => import("@/pages/Inventory"));
 const Guests = lazy(() => import("@/pages/Guests"));
 const Pos = lazy(() => import("@/pages/Pos"));
 const Housekeeping = lazy(() => import("@/pages/Housekeeping"));
@@ -80,6 +81,14 @@ export default function App() {
           element={
             <Suspense fallback={<Loading />}>
               <FrontDesk />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/inventory"
+          element={
+            <Suspense fallback={<Loading />}>
+              <Inventory />
             </Suspense>
           }
         />

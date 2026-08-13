@@ -236,6 +236,8 @@ function Warnings({ warnings }: { warnings: AuditWarnings }) {
     [t("na.openShifts"), warnings.open_shifts, warnings.open_shifts > 0],
     [t("na.noUnit"), warnings.in_house_without_unit, warnings.in_house_without_unit > 0],
     [t("na.overdue"), warnings.overdue_checkouts, warnings.overdue_checkouts > 0],
+    [t("inv.oversold"), warnings.oversold_days, warnings.oversold_days > 0],
+    [t("wl.readyCount"), warnings.waitlist_ready, false],
   ];
   const anyCritical = rows.some(([, , bad]) => bad);
 

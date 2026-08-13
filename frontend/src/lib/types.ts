@@ -381,6 +381,108 @@ export type Shift = {
   discounts_total: string;
 };
 
+/* ────────────────────────────────── الإتاحة وحد التجاوز */
+export type InventoryCategory = {
+  id: number;
+  code: string;
+  name_ar: string;
+  name_en: string;
+  total_units: number;
+};
+
+export type InventoryCell = {
+  unit_category_id: number;
+  stay_date: string;
+  total: number;
+  out_of_order: number;
+  sold: number;
+  held: number;
+  overbooking_limit: number;
+  is_closed: boolean;
+  available: number;
+  oversold_by: number;
+  occupancy_percent: number;
+};
+
+export type InventorySummary = {
+  oversold_cells: number;
+  closed_cells: number;
+  limited_cells: number;
+  sold_out_cells: number;
+  waiting_count: number;
+  offered_count: number;
+  ready_count: number;
+};
+
+export type InventoryBoard = {
+  start_date: string;
+  end_date: string;
+  categories: InventoryCategory[];
+  cells: InventoryCell[];
+  summary: InventorySummary;
+};
+
+export type ControlResult = {
+  ok: boolean;
+  message_ar: string;
+  message_en: string;
+  rows_changed: number;
+};
+
+/* ─────────────────────────────────────────── قائمة الانتظار */
+export type WaitlistStatus = "WAITING" | "OFFERED" | "CONVERTED" | "CANCELLED" | "EXPIRED";
+export type WaitlistPriority = "NORMAL" | "HIGH" | "VIP";
+
+export type WaitlistItem = {
+  id: number;
+  guest_id: number;
+  guest_name: string;
+  guest_phone: string | null;
+  is_vip: boolean;
+  unit_category_id: number;
+  category_name_ar: string;
+  category_name_en: string;
+  rate_plan_id: number | null;
+  arrival_date: string;
+  departure_date: string;
+  nights: number;
+  adults: number;
+  children: number;
+  flexible_days: number;
+  status: WaitlistStatus;
+  priority: WaitlistPriority;
+  source: string;
+  quoted_total: string;
+  contact_note: string | null;
+  offered_at: string | null;
+  offer_expires_at: string | null;
+  offered_arrival: string | null;
+  offered_departure: string | null;
+  converted_reservation_id: number | null;
+  converted_reservation_code: string | null;
+  created_at: string | null;
+  has_match: boolean;
+  match_arrival: string | null;
+  match_departure: string | null;
+  match_shift_days: number | null;
+};
+
+export type WaitlistPage = {
+  items: WaitlistItem[];
+  waiting_count: number;
+  offered_count: number;
+  ready_count: number;
+};
+
+export type WaitlistResult = {
+  ok: boolean;
+  message_ar: string;
+  message_en: string;
+  entry: WaitlistItem | null;
+  reservation_id: number | null;
+  reservation_code: string | null;
+};
+
 /* ───────────────────────────────────────────── تدقيق الليلة */
 export type AuditWarnings = {
   open_folios: number;
@@ -388,6 +490,8 @@ export type AuditWarnings = {
   open_shifts: number;
   in_house_without_unit: number;
   overdue_checkouts: number;
+  oversold_days: number;
+  waitlist_ready: number;
 };
 
 export type NightAuditRun = {

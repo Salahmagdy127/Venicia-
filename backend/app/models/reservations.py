@@ -24,7 +24,13 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, PKMixin, TimestampMixin
 from app.db.types import BigIntPK, Money, Percent, TZDateTime
-from app.models.enums import BookingSource, MealPlan, ReservationStatus
+from app.models.enums import (
+    BookingSource,
+    MealPlan,
+    ReservationStatus,
+    WaitlistPriority,
+    WaitlistStatus,
+)
 
 
 # ------------------------------------------------------------ عدّاد الإتاحة
@@ -279,3 +285,81 @@ class ReservationNight(Base, PKMixin):
         # ترحيل ليالي اليوم في الـ Night Audit
         Index("ix_reservation_night_posting", "property_id", "stay_date", "is_posted"),
     )
+
+
+# ------------------------------------------------------------ قائمة الانتظار
+class WaitlistEntry(Base, PKMixin, TimestampMixin):
+    """طلب مستنّي مكان يفضى — Waitlist.
+
+    مش حجز: مبياخدش كود ولا بيخصم إتاحة ولا بيفتح حساب. مجرد نية شراء
+    محفوظة بتواريخها، عشان أول ما حجز يتلغي يبقى فيه حد نكلّمه بدل ما
+    الوحدة تقعد فاضية.
+
+    الاستثناء الوحيد: لما الموظف **يعرض** المكان على صاحب الطلب، بنحجز
+    الوحدة مؤقتاً في ``held_units`` لمدة محدودة عشان متتباعش وهو بيرد.
+    """
+
+    __tablename__ = "waitlist_entry"
+
+    property_id: Mapped[int] = mapped_column(
+        BigIntPK, ForeignKey("property.id", ondelete="RESTRICT"), nullable=False
+    )
+    guest_id: Mapped[int] = mapped_column(
+        BigIntPK, ForeignKey("guest.id", ondelete="RESTRICT"), nullable=False
+    )
+    unit_category_id: Mapped[int] = mapped_column(
+        BigIntPK, ForeignKey("unit_category.id", ondelete="RESTRICT"), nullable=False
+    )
+    rate_plan_id: Mapped[Optional[int]] = mapped_column(
+        BigIntPK, ForeignKey("rate_plan.id", ondelete="SET NULL")
+    )
+
+    arrival_date: Mapped[date] = mapped_column(Date, nullable=False)
+    departure_date: Mapped[date] = mapped_column(Date, nullable=False)
+    nights: Mapped[int] = mapped_column(nullable=False, default=1)
+    adults: Mapped[int] = mapped_column(nullable=False, default=2)
+    children: Mapped[int] = mapped_column(nullable=False, default=0)
+
+    #: بيقبل يقدّم أو يأخّر كام يوم — بيوسّع فرص إننا نلاقيله مكان
+    flexible_days: Mapped[int] = mapped_column(nullable=False, default=0)
+
+    status: Mapped[WaitlistStatus] = mapped_column(
+        String(12), nullable=False, default=WaitlistStatus.WAITING
+    )
+    priority: Mapped[WaitlistPriority] = mapped_column(
+        String(8), nullable=False, default=WaitlistPriority.NORMAL
+    )
+    source: Mapped[BookingSource] = mapped_column(
+        String(20), nullable=False, default=BookingSource.DIRECT
+    )
+
+    #: تسعيرة تقريبية وقت التسجيل — عشان الموظف يعرف يقول إيه في التليفون
+    quoted_total: Mapped[Decimal] = mapped_column(Money, nullable=False, default=Decimal("0"))
+    contact_note: Mapped[Optional[str]] = mapped_column(String(500))
+
+    # --- دورة العرض ---
+    offered_at: Mapped[Optional[datetime]] = mapped_column(TZDateTime)
+    #: بعد الوقت ده الحجز المؤقت بيتفك والدور بيرجع لغيره
+    offer_expires_at: Mapped[Optional[datetime]] = mapped_column(TZDateTime, index=True)
+    offered_by_user_id: Mapped[Optional[int]] = mapped_column(BigIntPK)
+    #: التواريخ اللي اتعرضت فعلاً — ممكن تكون مزحلقة عن الأصلية بالمرونة
+    offered_arrival: Mapped[Optional[date]] = mapped_column(Date)
+    offered_departure: Mapped[Optional[date]] = mapped_column(Date)
+
+    converted_reservation_id: Mapped[Optional[int]] = mapped_column(BigIntPK, index=True)
+    closed_at: Mapped[Optional[datetime]] = mapped_column(TZDateTime)
+    closed_reason: Mapped[Optional[str]] = mapped_column(String(300))
+
+    created_by_user_id: Mapped[Optional[int]] = mapped_column(BigIntPK)
+
+    __table_args__ = (
+        # الشاشة الوحيدة المهمة: "مين مستنّي في المدى ده" مرتّبين بالأولوية
+        Index("ix_waitlist_property_status", "property_id", "status", "arrival_date"),
+        Index("ix_waitlist_category_dates", "unit_category_id", "arrival_date", "departure_date"),
+        Index("ix_waitlist_guest", "guest_id"),
+        CheckConstraint("departure_date > arrival_date", name="waitlist_valid_range"),
+        CheckConstraint("flexible_days >= 0", name="waitlist_flex_non_negative"),
+    )
+
+    def __repr__(self) -> str:  # pragma: no cover
+        return f"<WaitlistEntry {self.id} {self.status} {self.arrival_date}>"

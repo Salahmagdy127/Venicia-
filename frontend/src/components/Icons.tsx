@@ -60,6 +60,14 @@ export const IconBroom = ({ size = 20, className }: P) => (
   </svg>
 );
 
+/** شبكة الإتاحة — صفوف فئات × أعمدة أيام */
+export const IconGrid = ({ size = 20, className }: P) => (
+  <svg {...base(size)} className={className} aria-hidden="true">
+    <rect x="3" y="4" width="18" height="16" rx="2" />
+    <path d="M3 10h18M3 15h18M9 10v10M15 10v10" />
+  </svg>
+);
+
 export const IconChart = ({ size = 20, className }: P) => (
   <svg {...base(size)} className={className} aria-hidden="true">
     <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />

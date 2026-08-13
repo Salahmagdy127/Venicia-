@@ -23,12 +23,19 @@ from app.models.enums import (
     BLOCKING_RESERVATION_STATUSES,
     OutletType,
     PosOrderStatus,
+    WaitlistPriority,
+    WaitlistStatus,
 )
+from app.models.guests import Guest
 from app.models.organization import Property
 from app.models.pos import MenuItem, Outlet, PosOrder, PosTable
-from app.models.reservations import ReservationUnit
+from app.models.rates import RatePlan
+from app.models.reservations import ReservationUnit, WaitlistEntry
 from app.models.security import User
+from app.models.units import UnitCategory
+from app.services import availability as av
 from app.services import pos as pos_svc
+from app.services import waitlist as wl
 
 RNG = random.Random(20260812)
 
@@ -36,6 +43,8 @@ RNG = random.Random(20260812)
 BUSY_RATIO = 0.45
 #: كام حجز قادم نسيبه من غير تخصيص وحدة عشان شريط «لم تُخصص» يبان
 UNASSIGNED_TARGET = 5
+#: كام طلب في قائمة الانتظار — رقم واقعي لقرية بتترفض فيها طلبات كل ويك إند
+WAITLIST_TARGET = 12
 
 
 def pick_property(db: Session) -> Property:
@@ -161,6 +170,112 @@ def unassign_upcoming(db: Session, prop: Property) -> int:
     return len(chosen)
 
 
+def seed_waitlist(db: Session, prop: Property) -> int:
+    """طلبات مستنية على الأيام المقفولة — ده الوضع الطبيعي في الويك إند.
+
+    بنختار أيام إتاحتها صفر فعلاً، فالقايمة بتبان زي الواقع: ناس اتقالّهم
+    «مفيش» وسايبين رقمهم. وبنخلي شوية منهم مرنين في التواريخ عشان يبان
+    عمود «فيه مكان دلوقتي» شغّال.
+    """
+    existing = db.execute(
+        select(func.count(WaitlistEntry.id)).where(
+            WaitlistEntry.property_id == prop.id,
+            WaitlistEntry.status.in_([WaitlistStatus.WAITING, WaitlistStatus.OFFERED]),
+        )
+    ).scalar_one()
+    if existing >= WAITLIST_TARGET:
+        return 0
+
+    today = date.today()
+    horizon = today + timedelta(days=45)
+    rows = av.get_availability(db, prop.id, today + timedelta(days=1), horizon)
+    # المقفول تماماً أول الأولوية، وبعدين اللي فاضل فيه وحدة واحدة
+    full = [r for r in rows if r.available == 0] + [r for r in rows if r.available == 1]
+    if not full:
+        return 0
+
+    guests = db.execute(
+        select(Guest)
+        .where(Guest.property_id == prop.id, Guest.is_blacklisted.is_(False))
+        .order_by(Guest.total_stays.desc())
+        .limit(400)
+    ).scalars().all()
+    if not guests:
+        return 0
+
+    plan_id = db.execute(
+        select(RatePlan.id)
+        .where(RatePlan.property_id == prop.id, RatePlan.is_active.is_(True))
+        .order_by(RatePlan.sort_order)
+        .limit(1)
+    ).scalar_one_or_none()
+
+    made = 0
+    for slot in RNG.sample(full, k=min(WAITLIST_TARGET - existing, len(full))):
+        guest = RNG.choice(guests)
+        nights = RNG.choice([2, 2, 3, 4])
+        priority = (
+            WaitlistPriority.VIP
+            if guest.is_vip
+            else RNG.choice(
+                [WaitlistPriority.NORMAL, WaitlistPriority.NORMAL, WaitlistPriority.HIGH]
+            )
+        )
+        try:
+            wl.add(
+                db,
+                property_id=prop.id,
+                guest_id=guest.id,
+                unit_category_id=slot.unit_category_id,
+                arrival=slot.stay_date,
+                departure=slot.stay_date + timedelta(days=nights),
+                adults=RNG.choice([2, 2, 3, 4]),
+                children=RNG.choice([0, 0, 1, 2]),
+                rate_plan_id=plan_id,
+                # التلت مرنين — دول اللي هيلاقولهم مكان أول ما حجز يتلغي
+                flexible_days=RNG.choice([0, 0, 2, 3]),
+                priority=priority,
+                contact_note=RNG.choice(
+                    [
+                        "بيسأل على إطلالة البحيرة",
+                        "عايز يقرب من الشاطئ",
+                        "مناسبة عيد جواز",
+                        None,
+                        None,
+                    ]
+                ),
+            )
+            made += 1
+        except wl.WaitlistError:
+            continue  # نزيل متكرر على نفس التواريخ — بنعدّيه
+    return made
+
+
+def seed_overbooking(db: Session, prop: Property) -> int:
+    """حد تجاوز بسيط على الويك إندات الجاية للفئات الكبيرة.
+
+    مش بيعمل بيع زايد بنفسه — بيوسّع السعة المسموح بيها بس، عشان الشاشة
+    تفتح والضبط شغّال بدل ما يبان زرار مالوش أثر.
+    """
+    today = date.today()
+    big = db.execute(
+        select(UnitCategory.id)
+        .where(UnitCategory.property_id == prop.id, UnitCategory.is_active.is_(True))
+        .order_by(UnitCategory.sort_order)
+        .limit(2)
+    ).scalars().all()
+    if not big:
+        return 0
+
+    touched = 0
+    for offset in range(1, 60):
+        day = today + timedelta(days=offset)
+        if day.weekday() not in (4, 5):  # الجمعة والسبت
+            continue
+        touched += av.set_overbooking(db, prop.id, day, day + timedelta(days=1), 1, big)
+    return touched
+
+
 def run() -> None:
     db = SessionLocal()
     try:
@@ -169,12 +284,16 @@ def run() -> None:
 
         orders, lines = open_live_orders(db, prop, waiter)
         unassigned = unassign_upcoming(db, prop)
+        waiting = seed_waitlist(db, prop)
+        limits = seed_overbooking(db, prop)
         db.commit()
 
         print("─" * 46)
         print(f"  أوردرات مفتوحة على الطاولات   {orders:>6,}")
         print(f"  أصناف عليها                   {lines:>6,}")
         print(f"  حجوزات بقت من غير تخصيص       {unassigned:>6,}")
+        print(f"  طلبات في قائمة الانتظار        {waiting:>6,}")
+        print(f"  أيام عليها حد تجاوز            {limits:>6,}")
         print("─" * 46)
         if orders == 0:
             print("  (فيه أوردرات مفتوحة بالفعل — مش هيتكرّر)")
