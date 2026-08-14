@@ -22,6 +22,7 @@ from app.api.v1 import (
     folio,
     inventory,
     invoices,
+    maintenance,
     operations,
     pos,
     reservations,
@@ -89,6 +90,7 @@ app.include_router(inventory.router, prefix=settings.API_V1_PREFIX)
 app.include_router(channels.router, prefix=settings.API_V1_PREFIX)
 app.include_router(booking_engine.router, prefix=settings.API_V1_PREFIX)
 app.include_router(invoices.router, prefix=settings.API_V1_PREFIX)
+app.include_router(maintenance.router, prefix=settings.API_V1_PREFIX)
 app.include_router(operations.router, prefix=settings.API_V1_PREFIX)
 app.include_router(dashboard.router, prefix=settings.API_V1_PREFIX)
 

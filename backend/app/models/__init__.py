@@ -14,6 +14,7 @@ from app.models.channels import (
     ChannelMapping,
     ChannelMessage,
 )
+from app.models.maintenance import MaintenanceTicket, MinibarItem
 from app.models.folio import Folio, FolioLine, Payment
 from app.models.guests import Company, Guest, GuestDocument
 from app.models.organization import Property
@@ -110,6 +111,9 @@ __all__ = [
     "ChannelMapping",
     "ChannelMessage",
     "ChannelBooking",
+    # maintenance
+    "MaintenanceTicket",
+    "MinibarItem",
     # analytics
     "DailyStatistics",
     "DailyCategoryStatistics",

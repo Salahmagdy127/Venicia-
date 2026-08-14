@@ -99,6 +99,51 @@ class BookingSource(StrEnum):
     CORPORATE = "CORPORATE"          # عقد شركات
 
 
+# ---------------------------------------------------------- الصيانة
+class TicketCategory(StrEnum):
+    """نوع العطل — بيحدّد الفني اللي بيروح."""
+
+    AC = "AC"                        # تكييف
+    PLUMBING = "PLUMBING"            # سباكة
+    ELECTRICAL = "ELECTRICAL"        # كهرباء
+    FURNITURE = "FURNITURE"          # أثاث
+    APPLIANCE = "APPLIANCE"          # أجهزة
+    NETWORK = "NETWORK"              # نت وتليفزيون
+    POOL = "POOL"                    # حمام السباحة
+    GROUNDS = "GROUNDS"              # المساحات الخارجية
+    OTHER = "OTHER"
+
+
+class TicketPriority(StrEnum):
+    LOW = "LOW"
+    NORMAL = "NORMAL"
+    HIGH = "HIGH"
+    URGENT = "URGENT"                # نزيل نازل والعطل مأثّر عليه
+
+
+class TicketStatus(StrEnum):
+    OPEN = "OPEN"                    # اتفتحت ولسه محدش خدها
+    ASSIGNED = "ASSIGNED"            # اتسندت لفني
+    IN_PROGRESS = "IN_PROGRESS"      # الشغل بدأ
+    DONE = "DONE"                    # خلصت
+    CANCELLED = "CANCELLED"
+
+
+class TicketSource(StrEnum):
+    """مين بلّغ — بيفرق في المتابعة."""
+
+    HOUSEKEEPING = "HOUSEKEEPING"    # الهاوس كيبينج لقاها وهي بتنضّف
+    GUEST = "GUEST"                  # النزيل اشتكى
+    STAFF = "STAFF"
+    INSPECTION = "INSPECTION"        # جولة تفتيش
+
+
+#: التذاكر اللي لسه شغّالة — بتتحسب في اللوحة والمحاذير
+OPEN_TICKET_STATUSES: frozenset[TicketStatus] = frozenset(
+    {TicketStatus.OPEN, TicketStatus.ASSIGNED, TicketStatus.IN_PROGRESS}
+)
+
+
 # ------------------------------------------------------- الربط بالقنوات
 class ChannelMessageKind(StrEnum):
     """نوع الرسالة الطالعة للقناة."""

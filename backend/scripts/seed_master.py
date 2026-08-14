@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 from app.core.security import hash_password
 from app.db.base import Base, SessionLocal, engine
 from app.models.channels import Channel, ChannelMapping
+from app.models.maintenance import MinibarItem
 from app.models.enums import (
     AdjustmentMethod,
     BookingSource,
@@ -119,6 +120,8 @@ PERMISSIONS: list[tuple[str, str, str, str]] = [
     ("nightaudit.run", "nightaudit", "تشغيل النايت أوديت", "Run night audit"),
     ("channel.view", "channel", "عرض القنوات", "View channels"),
     ("channel.manage", "channel", "إدارة القنوات والربط", "Manage channels & mapping"),
+    ("maintenance.view", "maintenance", "عرض بلاغات الصيانة", "View maintenance tickets"),
+    ("maintenance.manage", "maintenance", "إدارة بلاغات الصيانة", "Manage maintenance tickets"),
     ("admin.users", "admin", "إدارة المستخدمين", "Manage users"),
     ("admin.settings", "admin", "إعدادات النظام", "System settings"),
 ]
@@ -165,7 +168,7 @@ ROLES: list[tuple[str, str, str, int, list[str]]] = [
             "folio.split", "folio.settle", "housekeeping.view",
             "housekeeping.update", "guest.view", "guest.edit",
             "invoice.issue", "invoice.cancel", "report.operational",
-            "channel.view",
+            "channel.view", "maintenance.view", "maintenance.manage",
         ],
     ),
     (
@@ -198,7 +201,11 @@ ROLES: list[tuple[str, str, str, int, list[str]]] = [
         "سوبرفايزر هاوس كيبينج",
         "Housekeeping Supervisor",
         0,
-        ["housekeeping.view", "housekeeping.update", "reservation.view"],
+        # الهاوس كيبينج بتلاقي الأعطال وهي بتنضّف — فبتفتح البلاغ بنفسها
+        [
+            "housekeeping.view", "housekeeping.update", "reservation.view",
+            "maintenance.view", "maintenance.manage",
+        ],
     ),
     (
         "ACCOUNTANT",
@@ -880,6 +887,49 @@ def publish_calendar(
     return published, slots
 
 
+# ═══════════════════════════════════════════════════════ الميني بار
+#: (الكود، عربي، إنجليزي، السعر، فيه كحول)
+MINIBAR: list[tuple[str, str, str, str, bool]] = [
+    ("MB-WTR", "مياه معدنية", "Mineral water", "25", False),
+    ("MB-SPK", "مياه غازية", "Sparkling water", "35", False),
+    ("MB-COL", "مشروب غازي", "Soft drink", "40", False),
+    ("MB-JUI", "عصير طبيعي", "Fresh juice", "55", False),
+    ("MB-NES", "نسكافيه", "Instant coffee", "45", False),
+    ("MB-TEA", "شاي", "Tea", "30", False),
+    ("MB-NUT", "مكسرات", "Mixed nuts", "85", False),
+    ("MB-CHP", "شيبسي", "Crisps", "40", False),
+    ("MB-CHO", "شوكولاتة", "Chocolate bar", "60", False),
+    ("MB-BEE", "بيرة محلية", "Local beer", "120", True),
+]
+
+
+def create_minibar(db: Session, prop: Property) -> int:
+    existing = {
+        i.code for i in db.execute(
+            select(MinibarItem).where(MinibarItem.property_id == prop.id)
+        ).scalars().all()
+    }
+    made = 0
+    for order, (code, name_ar, name_en, price, alcohol) in enumerate(MINIBAR):
+        if code in existing:
+            continue
+        db.add(
+            MinibarItem(
+                property_id=prop.id,
+                code=code,
+                name_ar=name_ar,
+                name_en=name_en,
+                price=Decimal(price),
+                contains_alcohol=alcohol,
+                sort_order=order,
+                is_active=True,
+            )
+        )
+        made += 1
+    db.flush()
+    return made
+
+
 # ═══════════════════════════════════════════════════ القنوات والربط
 #: (المصدر، الاسم بالعربي، الاسم بالإنجليزي، العمولة، بادئة رقم الغرفة)
 CHANNELS: list[tuple[BookingSource, str, str, str, str]] = [
@@ -991,6 +1041,9 @@ def run(years_back: int = 2, months_forward: int = 6) -> None:
         print("المنيو...")
         items = create_menu(db, prop, outlets, stations)
 
+        print("الميني بار...")
+        minibar_items = create_minibar(db, prop)
+
         print("القنوات وربط الغرف...")
         made_channels, mapped_rooms = create_channels(db, prop, cats, plans)
 
@@ -1016,6 +1069,7 @@ def run(years_back: int = 2, months_forward: int = 6) -> None:
         print(f"  الطاولات             {tables}")
         print(f"  أصناف المنيو         {items}")
         print(f"  قنوات البيع          {made_channels}  (ربط: {mapped_rooms})")
+        print(f"  أصناف الميني بار     {minibar_items}")
         print(f"  أسعار منشورة         {published:,}")
         print(f"  صفوف عدّاد الإتاحة   {slots:,}")
         print("─" * 52)

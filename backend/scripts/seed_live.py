@@ -20,11 +20,16 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.db.base import SessionLocal
 from app.models.channels import Channel, ChannelBooking
+from app.models.maintenance import MaintenanceTicket
 from app.models.enums import (
     BLOCKING_RESERVATION_STATUSES,
     ChannelBookingStatus,
     OutletType,
     PosOrderStatus,
+    TicketCategory,
+    TicketPriority,
+    TicketSource,
+    UnitCondition,
     WaitlistPriority,
     WaitlistStatus,
 )
@@ -34,9 +39,10 @@ from app.models.pos import MenuItem, Outlet, PosOrder, PosTable
 from app.models.rates import RatePlan
 from app.models.reservations import ReservationUnit, WaitlistEntry
 from app.models.security import User
-from app.models.units import UnitCategory
+from app.models.units import Unit, UnitCategory
 from app.services import availability as av
 from app.services import channel_sync as cs
+from app.services import maintenance as mt
 from app.services import pos as pos_svc
 from app.services import waitlist as wl
 
@@ -411,6 +417,101 @@ def seed_channels(db: Session, prop: Property) -> tuple[int, int, int]:
     return queued, accepted, rejected
 
 
+#: بلاغات واقعية — (العنوان، النوع، الأولوية، بيحجب الوحدة، مين بلّغ)
+TICKETS: list[tuple[str, TicketCategory, TicketPriority, bool, TicketSource]] = [
+    ("التكييف مش بيبرّد", TicketCategory.AC, TicketPriority.URGENT, True,
+     TicketSource.GUEST),
+    ("تسريب مياه تحت الحوض", TicketCategory.PLUMBING, TicketPriority.HIGH, True,
+     TicketSource.HOUSEKEEPING),
+    ("لمبة السقف محروقة", TicketCategory.ELECTRICAL, TicketPriority.LOW, False,
+     TicketSource.HOUSEKEEPING),
+    ("ريموت التليفزيون ضايع", TicketCategory.APPLIANCE, TicketPriority.LOW, False,
+     TicketSource.HOUSEKEEPING),
+    ("الواي فاي ضعيف في الدور الأخير", TicketCategory.NETWORK, TicketPriority.NORMAL, False,
+     TicketSource.GUEST),
+    ("كرسي الشرفة مكسور", TicketCategory.FURNITURE, TicketPriority.NORMAL, False,
+     TicketSource.INSPECTION),
+    ("سخان المياه بيفصل", TicketCategory.PLUMBING, TicketPriority.HIGH, True,
+     TicketSource.GUEST),
+    ("باب البلكونة مش بيقفل كويس", TicketCategory.FURNITURE, TicketPriority.NORMAL, False,
+     TicketSource.HOUSEKEEPING),
+]
+
+
+def seed_tickets(db: Session, prop: Property) -> tuple[int, int]:
+    """بلاغات صيانة واقعية: منها مفتوح ومسند وشغّال وواحد اتقفل.
+
+    التنوّع مقصود — اللوحة لازم توري كل الحالات مش حالة واحدة.
+    """
+    already = db.execute(
+        select(func.count(MaintenanceTicket.id)).where(
+            MaintenanceTicket.property_id == prop.id
+        )
+    ).scalar_one()
+    if already:
+        return 0, 0
+
+    # وحدات شغّالة مش مقفولة أصلاً.
+    #
+    # بنبدأ من آخر القايمة عن قصد: الوحدات الأولى في كل فئة هي اللي
+    # سكربتات الاختبار بتشتغل عليها، ولو حجبناها الاختبارات بتفشل على
+    # داتا سليمة — وده أسوأ من إن البلاغات تبان على وحدات تانية.
+    units = list(
+        db.execute(
+            select(Unit)
+            .where(
+                Unit.property_id == prop.id,
+                Unit.is_active.is_(True),
+                Unit.condition == UnitCondition.OPERATIONAL,
+            )
+            .order_by(Unit.sort_order.desc(), Unit.id.desc())
+            .limit(40)
+        ).scalars().all()
+    )
+    techs = list(
+        db.execute(
+            select(User).where(User.property_id == prop.id, User.is_active.is_(True))
+        ).scalars().all()
+    )
+    if not units or not techs:
+        return 0, 0
+
+    made = closed = 0
+    for index, (title, category, priority, blocks, source) in enumerate(TICKETS):
+        unit = units[index * 3 % len(units)]
+        ticket = mt.open_ticket(
+            db,
+            prop.id,
+            title=title,
+            unit_id=unit.id,
+            category=category,
+            priority=priority,
+            source=source,
+            blocks_unit=blocks,
+            description=None,
+            user=RNG.choice(techs),
+        )
+        made += 1
+
+        # التوزيع: واحد من كل تلاتة بيتقفل، والباقي في مراحل مختلفة
+        if index % 3 == 0:
+            mt.assign(db, ticket.id, RNG.choice(techs).id)
+            mt.start(db, ticket.id)
+            mt.complete(
+                db, ticket.id,
+                resolution="اتصلّح واتجرّب قدام السوبرفايزر",
+                cost=Decimal(RNG.choice(["0", "150", "320", "80"])),
+            )
+            closed += 1
+        elif index % 3 == 1:
+            mt.assign(db, ticket.id, RNG.choice(techs).id)
+            if index % 2 == 1:
+                mt.start(db, ticket.id)
+
+    db.flush()
+    return made, closed
+
+
 def run() -> None:
     db = SessionLocal()
     try:
@@ -422,6 +523,7 @@ def run() -> None:
         waiting = seed_waitlist(db, prop)
         limits = seed_overbooking(db, prop)
         pushed, from_channels, refused = seed_channels(db, prop)
+        tickets, closed_tickets = seed_tickets(db, prop)
         db.commit()
 
         print("─" * 46)
@@ -433,6 +535,7 @@ def run() -> None:
         print(f"  رسايل مطابقة للقنوات           {pushed:>6,}")
         print(f"  حجوزات جت من القنوات           {from_channels:>6,}")
         print(f"  حجوزات القنوات المرفوضة        {refused:>6,}")
+        print(f"  بلاغات صيانة                   {tickets:>6,}  (مقفول: {closed_tickets})")
         print("─" * 46)
         if orders == 0:
             print("  (فيه أوردرات مفتوحة بالفعل — مش هيتكرّر)")

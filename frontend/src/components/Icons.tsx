@@ -68,6 +68,13 @@ export const IconGrid = ({ size = 20, className }: P) => (
   </svg>
 );
 
+/** الصيانة — مفتاح إنجليزي */
+export const IconWrench = ({ size = 20, className }: P) => (
+  <svg {...base(size)} className={className} aria-hidden="true">
+    <path d="M15.2 3.6a5.2 5.2 0 0 0-6.1 6.7l-5.4 5.4a1.9 1.9 0 0 0 0 2.7l1.9 1.9a1.9 1.9 0 0 0 2.7 0l5.4-5.4a5.2 5.2 0 0 0 6.7-6.1l-3 3-2.6-.6-.6-2.6Z" />
+  </svg>
+);
+
 /** الفاتورة الإلكترونية — إيصال مسنّن من تحت */
 export const IconReceipt = ({ size = 20, className }: P) => (
   <svg {...base(size)} className={className} aria-hidden="true">

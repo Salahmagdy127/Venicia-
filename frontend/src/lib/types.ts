@@ -483,6 +483,78 @@ export type WaitlistResult = {
   reservation_code: string | null;
 };
 
+/* ─────────────────────────────────────── الصيانة والميني بار */
+export type TicketCategory =
+  | "AC"
+  | "PLUMBING"
+  | "ELECTRICAL"
+  | "FURNITURE"
+  | "APPLIANCE"
+  | "NETWORK"
+  | "POOL"
+  | "GROUNDS"
+  | "OTHER";
+
+export type TicketPriority = "LOW" | "NORMAL" | "HIGH" | "URGENT";
+export type TicketStatus = "OPEN" | "ASSIGNED" | "IN_PROGRESS" | "DONE" | "CANCELLED";
+export type TicketSource = "HOUSEKEEPING" | "GUEST" | "STAFF" | "INSPECTION";
+
+export type Ticket = {
+  id: number;
+  number: string;
+  unit_id: number | null;
+  unit_label: string | null;
+  location: string | null;
+  category: TicketCategory;
+  priority: TicketPriority;
+  status: TicketStatus;
+  source: TicketSource;
+  title: string;
+  description: string | null;
+  blocks_unit: boolean;
+  reported_by_name: string | null;
+  assigned_to_user_id: number | null;
+  assigned_to_name: string | null;
+  folio_id: number | null;
+  opened_at: string;
+  assigned_at: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  due_at: string | null;
+  is_overdue: boolean;
+  resolution: string | null;
+  cost: string;
+  cancelled_reason: string | null;
+};
+
+export type MaintenanceBoard = {
+  open: number;
+  assigned: number;
+  in_progress: number;
+  done_today: number;
+  overdue: number;
+  urgent: number;
+  blocked_units: number;
+  cost_this_month: string;
+  tickets: Ticket[];
+};
+
+export type Technician = {
+  id: number;
+  name_ar: string;
+  name_en: string;
+  role_ar: string;
+};
+
+export type MinibarItemOut = {
+  id: number;
+  code: string;
+  name_ar: string;
+  name_en: string;
+  price: string;
+  contains_alcohol: boolean;
+};
+
 /* ────────────────────────────────────── الفاتورة الإلكترونية */
 export type EtaStatus =
   | "DRAFT"
