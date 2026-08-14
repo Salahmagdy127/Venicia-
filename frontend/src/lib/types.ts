@@ -483,6 +483,40 @@ export type WaitlistResult = {
   reservation_code: string | null;
 };
 
+/* ────────────────────────────────────────── منيو الـ QR العام */
+export type PublicMenuItem = {
+  name_ar: string;
+  name_en: string;
+  description_ar: string | null;
+  description_en: string | null;
+  price: string;
+  is_vegetarian: boolean;
+  contains_alcohol: boolean;
+  preparation_minutes: number | null;
+  is_out_of_stock: boolean;
+};
+
+export type PublicMenuCategory = {
+  name_ar: string;
+  name_en: string;
+  items: PublicMenuItem[];
+};
+
+export type PublicMenu = {
+  property_name_ar: string;
+  property_name_en: string;
+  outlet_code: string;
+  outlet_name_ar: string;
+  outlet_name_en: string;
+  outlet_type: string;
+  currency: string;
+  service_charge_percent: string;
+  vat_percent: string;
+  table_label: string | null;
+  categories: PublicMenuCategory[];
+  item_count: number;
+};
+
 /* ─────────────────────────────────────── الصيانة والميني بار */
 export type TicketCategory =
   | "AC"

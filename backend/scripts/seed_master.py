@@ -12,7 +12,7 @@ from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.core.security import hash_password
 from app.db.base import Base, SessionLocal, engine
@@ -824,6 +824,10 @@ def create_menu(
         db.add(item)
         created += 1
     db.flush()
+
+    # خدمة الغرف مالهاش منيو خاص بيها — بتقدّم منيو المطعم والكافيه.
+    # من غير الربط ده كود الـ QR بتاعها بيفتح صفحة فاضية.
+    _link_room_service(db, prop, outlets)
     return created
 
 
@@ -885,6 +889,31 @@ def publish_calendar(
 
     slots = av.ensure_calendar(db, prop.id, start, end)
     return published, slots
+
+
+def _link_room_service(db: Session, prop: Property, outlets: dict[str, Outlet]) -> int:
+    """خدمة الغرف بتقدّم أصناف المطعم والكافيه — من غير أصناف خاصة بيها."""
+    room_service = outlets.get("RSVC")
+    sources = [outlets[c] for c in ("REST", "CAFE") if c in outlets]
+    if room_service is None or not sources:
+        return 0
+
+    source_ids = {o.id for o in sources}
+    items = db.execute(
+        select(MenuItem)
+        .options(selectinload(MenuItem.outlets))
+        .where(MenuItem.property_id == prop.id)
+    ).scalars().unique().all()
+
+    linked = 0
+    for item in items:
+        current = {o.id for o in item.outlets}
+        if room_service.id in current or not (current & source_ids):
+            continue
+        item.outlets.append(room_service)
+        linked += 1
+    db.flush()
+    return linked
 
 
 # ═══════════════════════════════════════════════════════ الميني بار

@@ -11,6 +11,8 @@ python-multipart==0.0.20
 email-validator==2.2.0
 httpx==0.28.1
 python-dateutil==2.9.0.post0
+# توليد أكواد QR — بايثون خالص من غير أي اعتماديات
+segno==1.6.1
 
 # Postgres driver (production). Not required for SQLite dev.
 psycopg[binary]==3.2.3

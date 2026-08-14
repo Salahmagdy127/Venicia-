@@ -28,6 +28,7 @@ import {
   cx,
   inputClass,
 } from "@/components/ui";
+import MenuQr from "@/components/MenuQr";
 import { IconPlus, IconSearch, IconSend, IconTrash, IconX } from "@/components/Icons";
 
 const SHIFT_KEY = "venicia.shift";
@@ -44,7 +45,7 @@ export default function Pos() {
     return raw ? Number(raw) : null;
   });
   const [openTable, setOpenTable] = useState<PosTable | null>(null);
-  const [modal, setModal] = useState<"settle" | "discount" | "shift" | null>(null);
+  const [modal, setModal] = useState<"settle" | "discount" | "shift" | "qr" | null>(null);
   const [voidLine, setVoidLine] = useState<number | null>(null);
   const [toast, setToast] = useState<{ tone: "good" | "bad"; text: string } | null>(null);
 
@@ -220,6 +221,10 @@ export default function Pos() {
           ))}
         </select>
 
+        <Button size="sm" variant="ghost" onClick={() => setModal("qr")}>
+          {t("qr.title")}
+        </Button>
+
         {shiftId === null ? (
           <Button size="sm" onClick={() => setModal("shift")}>
             {t("pos.openShift")}
@@ -230,6 +235,12 @@ export default function Pos() {
           </Button>
         )}
       </PageHeader>
+
+      {modal === "qr" && outlets.data && (
+        <Modal open onClose={() => setModal(null)} title={t("qr.title")} width={480}>
+          <MenuQr outlets={outlets.data} />
+        </Modal>
+      )}
 
       <div className="flex-1 min-h-0 flex gap-4 p-4 overflow-hidden">
         {/* ── تصميم الصالة */}

@@ -664,6 +664,34 @@ const DICT: Record<string, [string, string]> = {
   "ch.simulateSend": ["ابعت", "Send"],
   "ch.emptyQueue": ["الطابور فاضي", "Queue is empty"],
   "ch.emptyInbound": ["مفيش حجوزات واردة لسه", "No inbound bookings yet"],
+  // منيو الـ QR
+  "qr.title": ["كود المنيو", "Menu QR code"],
+  "qr.hint": [
+    "الكود بيتلصق على الطاولة. النزيل بيمسحه ويشوف المنيو على موبايله — من غير تطبيق ولا تسجيل.",
+    "Stick the code on the table. Guests scan it and read the menu on their phone — no app, no sign-in.",
+  ],
+  "qr.forTable": ["لطاولة معيّنة", "For a table"],
+  "qr.wholeOutlet": ["المنفذ كله", "Whole outlet"],
+  "qr.table": ["طاولة", "Table"],
+  "qr.scanMe": ["امسح الكود لعرض المنيو", "Scan for the menu"],
+  "qr.preview": ["افتح المعاينة", "Preview"],
+  "qr.print": ["اطبع", "Print"],
+  "qr.all": ["الكل", "All"],
+  "qr.veg": ["نباتي", "Veg"],
+  "qr.alcohol": ["كحولي", "Alcohol"],
+  "qr.soldOut": ["خلص النهاردة", "Sold out today"],
+  "qr.minutes": ["دقيقة تحضير", "min to prepare"],
+  "qr.itemCount": ["{n} صنف", "{n} items"],
+  "qr.taxNote": [
+    "الأسعار قبل خدمة {s}% وضريبة {v}%",
+    "Prices exclude {s}% service and {v}% VAT",
+  ],
+  "qr.notFound": ["المنيو ده مش موجود", "This menu does not exist"],
+  "qr.notFoundHint": [
+    "اتأكد إنك مسحت الكود الصح، أو اسأل الويتر.",
+    "Check the code you scanned, or ask your server.",
+  ],
+
   // الصيانة
   "nav.maintenance": ["الصيانة", "Maintenance"],
   "mt.title": ["بلاغات الصيانة", "Maintenance tickets"],

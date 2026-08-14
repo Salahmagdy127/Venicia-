@@ -16,6 +16,7 @@ const Invoices = lazy(() => import("@/pages/Invoices"));
 const Maintenance = lazy(() => import("@/pages/Maintenance"));
 // صفحة الحجز العامة — بره الشريط الجانبي وبره تسجيل الدخول
 const Book = lazy(() => import("@/pages/Book"));
+const Menu = lazy(() => import("@/pages/Menu"));
 const Guests = lazy(() => import("@/pages/Guests"));
 const Pos = lazy(() => import("@/pages/Pos"));
 const Housekeeping = lazy(() => import("@/pages/Housekeeping"));
@@ -58,12 +59,20 @@ export default function App() {
         }
       />
 
-      {/* صفحة الحجز مفتوحة للجمهور — مش وراها تسجيل دخول */}
+      {/* الصفحات العامة — مش وراها تسجيل دخول */}
       <Route
         path="/book"
         element={
           <Suspense fallback={<FullScreenLoading />}>
             <Book />
+          </Suspense>
+        }
+      />
+      <Route
+        path="/menu/:code"
+        element={
+          <Suspense fallback={<FullScreenLoading />}>
+            <Menu />
           </Suspense>
         }
       />
