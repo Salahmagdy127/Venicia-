@@ -12,6 +12,7 @@ const TapeChart = lazy(() => import("@/pages/TapeChart"));
 const FrontDesk = lazy(() => import("@/pages/FrontDesk"));
 const Inventory = lazy(() => import("@/pages/Inventory"));
 const Channels = lazy(() => import("@/pages/Channels"));
+const Invoices = lazy(() => import("@/pages/Invoices"));
 // صفحة الحجز العامة — بره الشريط الجانبي وبره تسجيل الدخول
 const Book = lazy(() => import("@/pages/Book"));
 const Guests = lazy(() => import("@/pages/Guests"));
@@ -110,6 +111,14 @@ export default function App() {
           element={
             <Suspense fallback={<Loading />}>
               <Channels />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/invoices"
+          element={
+            <Suspense fallback={<Loading />}>
+              <Invoices />
             </Suspense>
           }
         />

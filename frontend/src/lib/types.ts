@@ -483,6 +483,105 @@ export type WaitlistResult = {
   reservation_code: string | null;
 };
 
+/* ────────────────────────────────────── الفاتورة الإلكترونية */
+export type EtaStatus =
+  | "DRAFT"
+  | "QUEUED"
+  | "SUBMITTED"
+  | "VALID"
+  | "INVALID"
+  | "REJECTED"
+  | "CANCELLED"
+  | "FAILED";
+
+export type InvoiceKind = "INVOICE" | "RECEIPT" | "CREDIT_NOTE" | "DEBIT_NOTE";
+
+export type InvoiceLineOut = {
+  line_number: number;
+  description_ar: string;
+  description_en: string | null;
+  item_code: string | null;
+  unit_type: string;
+  quantity: string;
+  unit_price: string;
+  sales_total: string;
+  discount_amount: string;
+  net_total: string;
+  tax_percent: string;
+  tax_amount: string;
+  service_charge_amount: string;
+  total: string;
+};
+
+export type InvoiceDetail = {
+  id: number;
+  number: string;
+  invoice_type: InvoiceKind;
+  business_date: string;
+  issued_at: string;
+  folio_id: number | null;
+  pos_order_id: number | null;
+  reservation_id: number | null;
+  customer_name: string;
+  customer_tax_number: string | null;
+  customer_national_id: string | null;
+  customer_type: string;
+  currency: string;
+  subtotal: string;
+  discount_total: string;
+  service_charge_total: string;
+  tax_total: string;
+  grand_total: string;
+  eta_status: EtaStatus;
+  eta_uuid: string | null;
+  eta_internal_id: string | null;
+  eta_error_message: string | null;
+  eta_retry_count: number;
+  eta_submitted_at: string | null;
+  eta_accepted_at: string | null;
+  qr_payload: string | null;
+  is_cancelled: boolean;
+  cancellation_reason: string | null;
+  credit_note_for_invoice_id: number | null;
+  lines: InvoiceLineOut[];
+};
+
+export type InvoiceListItem = {
+  id: number;
+  number: string;
+  invoice_type: InvoiceKind;
+  business_date: string;
+  issued_at: string;
+  customer_name: string;
+  grand_total: string;
+  tax_total: string;
+  eta_status: EtaStatus;
+  is_cancelled: boolean;
+  eta_error_message: string | null;
+};
+
+export type InvoiceStats = {
+  total: number;
+  accepted: number;
+  pending: number;
+  failed: number;
+  rejected: number;
+  draft: number;
+  cancelled: number;
+  today_total: string;
+  today_tax: string;
+  eta_enabled: boolean;
+};
+
+export type QueueResult = {
+  ok: boolean;
+  message_ar: string;
+  message_en: string;
+  accepted: number;
+  failed: number;
+  requeued: number;
+};
+
 /* ───────────────────────────────────────── الحجز المباشر */
 export type PublicCategory = {
   id: number;

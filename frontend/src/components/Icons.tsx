@@ -68,6 +68,14 @@ export const IconGrid = ({ size = 20, className }: P) => (
   </svg>
 );
 
+/** الفاتورة الإلكترونية — إيصال مسنّن من تحت */
+export const IconReceipt = ({ size = 20, className }: P) => (
+  <svg {...base(size)} className={className} aria-hidden="true">
+    <path d="M5 3h14v16.5l-2.3-1.4-2.35 1.4-2.35-1.4-2.35 1.4L7.3 18.1 5 19.5Z" />
+    <path d="M8.5 8h7M8.5 12h7" />
+  </svg>
+);
+
 /** الربط بالقنوات — عقدة مركزية بتوزّع على أطراف */
 export const IconLink = ({ size = 20, className }: P) => (
   <svg {...base(size)} className={className} aria-hidden="true">
