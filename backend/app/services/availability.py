@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 from app.models.enums import UnitCondition
 from app.models.reservations import AvailabilityCalendar
 from app.models.units import Unit, UnitCategory
+from app.services import channel_sync
 
 
 class AvailabilityError(Exception):
@@ -291,11 +292,16 @@ def _apply(
     quantity: int,
     column: str,
     guard: bool,
+    reason: str = "تغيير إتاحة",
 ) -> None:
     """يزوّد أو يقلل عدّاد على مدى تواريخ في جملة واحدة.
 
     ``guard`` بيمنع تجاوز السعة. إن فشل يوم واحد، بنرمي استثناء والمعاملة كلها
     بترجع — يعني مفيش حجز نص نص.
+
+    وبعد النجاح، التغيير بيدخل طابور القنوات في **نفس المعاملة**. المكان ده
+    مقصود: أي مسار بيحرّك الإتاحة بيعدّي من هنا، فمستحيل حد ينسى يبلّغ
+    القنوات — وده بالظبط سبب الحجز المزدوج في الأنظمة التانية.
     """
     days = date_range(arrival, departure)
     if not days or quantity == 0:
@@ -341,6 +347,8 @@ def _apply(
             blocking_dates=blocking,
         )
 
+    channel_sync.queue_availability(db, property_id, category_id, arrival, departure, reason)
+
 
 def _find_blocking_dates(
     db: Session,
@@ -368,7 +376,10 @@ def reserve(
     quantity: int = 1,
 ) -> None:
     """بيخصم من الإتاحة. بيرمي ``AvailabilityError`` لو مفيش مكان."""
-    _apply(db, property_id, category_id, arrival, departure, quantity, "sold_units", guard=True)
+    _apply(
+        db, property_id, category_id, arrival, departure, quantity, "sold_units",
+        guard=True, reason="حجز جديد",
+    )
 
 
 def release(
@@ -381,7 +392,8 @@ def release(
 ) -> None:
     """بيرجّع الإتاحة عند الإلغاء أو المغادرة المبكرة."""
     _apply(
-        db, property_id, category_id, arrival, departure, -quantity, "sold_units", guard=False
+        db, property_id, category_id, arrival, departure, -quantity, "sold_units",
+        guard=False, reason="إلغاء أو تحرير",
     )
 
 
@@ -394,7 +406,10 @@ def hold(
     quantity: int = 1,
 ) -> None:
     """حجز مؤقت أثناء الدفع في محرك الحجز الإلكتروني."""
-    _apply(db, property_id, category_id, arrival, departure, quantity, "held_units", guard=True)
+    _apply(
+        db, property_id, category_id, arrival, departure, quantity, "held_units",
+        guard=True, reason="حجز مؤقت",
+    )
 
 
 def release_hold(
@@ -406,8 +421,26 @@ def release_hold(
     quantity: int = 1,
 ) -> None:
     _apply(
-        db, property_id, category_id, arrival, departure, -quantity, "held_units", guard=False
+        db, property_id, category_id, arrival, departure, -quantity, "held_units",
+        guard=False, reason="فك حجز مؤقت",
     )
+
+
+def _runs(days: Iterable[date]) -> list[tuple[date, date]]:
+    """بيحوّل مجموعة أيام لمديات متصلة — عشان كل مدى يتعمل بجملة واحدة."""
+    ordered = sorted(days)
+    if not ordered:
+        return []
+    runs: list[tuple[date, date]] = []
+    start = previous = ordered[0]
+    for day in ordered[1:]:
+        if (day - previous).days == 1:
+            previous = day
+            continue
+        runs.append((start, previous + timedelta(days=1)))
+        start = previous = day
+    runs.append((start, previous + timedelta(days=1)))
+    return runs
 
 
 def move(
@@ -422,12 +455,34 @@ def move(
     to_departure: date,
     quantity: int = 1,
 ) -> None:
-    """نقل حجز — بيحجز الجديد الأول، وبعد ما ينجح بيفضّي القديم.
+    """نقل حجز — بنحرّك **الفرق** بس، مش المدى كله.
 
-    الترتيب ده مقصود: لو الجديد مش متاح، القديم يفضل محجوز زي ما هو.
+    ده مهم في حالة شائعة جداً: نزيل عايز يقعد ليلة زيادة. الليالي اللي هو
+    قاعدها بالفعل مش المفروض تتحجز تاني — لو حجزناها وفضّيناها بعدها، الليلة
+    المليانة هتفشل الحجز رغم إن النزيل نفسه ساكن فيها. فبنحسب الليالي
+    الجديدة بس ونحجزها، والليالي اللي سابها بترجع للسوق.
+
+    الترتيب مقصود: الجديد الأول. لو فشل، القديم يفضل زي ما هو.
     """
-    reserve(db, property_id, to_category_id, to_arrival, to_departure, quantity)
-    release(db, property_id, from_category_id, from_arrival, from_departure, quantity)
+    old_days = set(date_range(from_arrival, from_departure))
+    new_days = set(date_range(to_arrival, to_departure))
+
+    if from_category_id != to_category_id:
+        # فئة مختلفة — مفيش ليالي مشتركة، الحركة كاملة
+        added, removed = new_days, old_days
+    else:
+        added, removed = new_days - old_days, old_days - new_days
+
+    for start, end in _runs(added):
+        _apply(
+            db, property_id, to_category_id, start, end, quantity, "sold_units",
+            guard=True, reason="تعديل حجز",
+        )
+    for start, end in _runs(removed):
+        _apply(
+            db, property_id, from_category_id, start, end, -quantity, "sold_units",
+            guard=False, reason="تعديل حجز",
+        )
 
 
 def set_overbooking(
@@ -457,7 +512,27 @@ def set_overbooking(
         .where(and_(*conditions))
         .values(overbooking_limit=limit, updated_at=datetime.now(timezone.utc))
     )
+
+    # الحد بيغيّر الرقم اللي القنوات شايفاه، فلازم يوصلهم
+    for category_id in _affected_categories(db, property_id, category_ids):
+        channel_sync.queue_availability(
+            db, property_id, category_id, start, end, f"حد تجاوز {limit}"
+        )
     return result.rowcount or 0
+
+
+def _affected_categories(
+    db: Session, property_id: int, category_ids: Iterable[int] | None
+) -> list[int]:
+    if category_ids:
+        return list(category_ids)
+    return list(
+        db.execute(
+            select(UnitCategory.id).where(
+                UnitCategory.property_id == property_id, UnitCategory.is_active.is_(True)
+            )
+        ).scalars().all()
+    )
 
 
 def set_closed(
@@ -481,5 +556,15 @@ def set_closed(
         update(AvailabilityCalendar)
         .where(and_(*conditions))
         .values(is_closed=closed, updated_at=datetime.now(timezone.utc))
+    )
+
+    # قفل البيع لازم يوصل القنوات فوراً — ده أخطر تغيير ممكن يتأخر
+    channel_sync.queue_stop_sell(
+        db,
+        property_id,
+        _affected_categories(db, property_id, category_ids),
+        start,
+        end,
+        "قفل البيع" if closed else "فتح البيع",
     )
     return result.rowcount or 0

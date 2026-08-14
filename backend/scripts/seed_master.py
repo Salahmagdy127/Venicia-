@@ -16,8 +16,10 @@ from sqlalchemy.orm import Session
 
 from app.core.security import hash_password
 from app.db.base import Base, SessionLocal, engine
+from app.models.channels import Channel, ChannelMapping
 from app.models.enums import (
     AdjustmentMethod,
+    BookingSource,
     HousekeepingStatus,
     MealPlan,
     OutletType,
@@ -115,6 +117,8 @@ PERMISSIONS: list[tuple[str, str, str, str]] = [
     ("invoice.issue", "invoice", "إصدار فاتورة", "Issue invoice"),
     ("invoice.cancel", "invoice", "إلغاء فاتورة", "Cancel invoice"),
     ("nightaudit.run", "nightaudit", "تشغيل النايت أوديت", "Run night audit"),
+    ("channel.view", "channel", "عرض القنوات", "View channels"),
+    ("channel.manage", "channel", "إدارة القنوات والربط", "Manage channels & mapping"),
     ("admin.users", "admin", "إدارة المستخدمين", "Manage users"),
     ("admin.settings", "admin", "إعدادات النظام", "System settings"),
 ]
@@ -161,6 +165,7 @@ ROLES: list[tuple[str, str, str, int, list[str]]] = [
             "folio.split", "folio.settle", "housekeeping.view",
             "housekeeping.update", "guest.view", "guest.edit",
             "invoice.issue", "invoice.cancel", "report.operational",
+            "channel.view",
         ],
     ),
     (
@@ -202,7 +207,7 @@ ROLES: list[tuple[str, str, str, int, list[str]]] = [
         0,
         [
             "folio.view", "report.financial", "report.operational", "report.audit",
-            "invoice.issue", "invoice.cancel", "nightaudit.run",
+            "invoice.issue", "invoice.cancel", "nightaudit.run", "channel.view",
         ],
     ),
 ]
@@ -237,23 +242,30 @@ def create_security(db: Session, prop: Property) -> dict[str, Role]:
         r.code: r for r in db.execute(select(Role)).scalars().all()
     }
     for code, name_ar, name_en, max_discount, perm_codes in ROLES:
-        if code in roles:
-            continue
-        role = Role(
-            code=code,
-            name_ar=name_ar,
-            name_en=name_en,
-            is_system=True,
-            max_discount_percent=max_discount,
+        role = roles.get(code)
+        if role is None:
+            role = Role(
+                code=code,
+                name_ar=name_ar,
+                name_en=name_en,
+                is_system=True,
+                max_discount_percent=max_discount,
+            )
+            db.add(role)
+            roles[code] = role
+
+        # الصلاحيات بتتظبّط في كل تشغيل مش عند الإنشاء بس: أي موديول جديد
+        # بيتضاف بعدين لازم يوصل للأدوار الموجودة، وإلا المالك نفسه يلاقي
+        # شاشة جديدة مقفولة في وشه.
+        wanted = (
+            list(existing_perms.values())
+            if perm_codes == ["*"]
+            else [existing_perms[c] for c in perm_codes if c in existing_perms]
         )
-        if perm_codes == ["*"]:
-            role.permissions = list(existing_perms.values())
-        else:
-            role.permissions = [
-                existing_perms[c] for c in perm_codes if c in existing_perms
-            ]
-        db.add(role)
-        roles[code] = role
+        have = {p.code for p in role.permissions}
+        for perm in wanted:
+            if perm.code not in have:
+                role.permissions.append(perm)
     db.flush()
     return roles
 
@@ -868,6 +880,75 @@ def publish_calendar(
     return published, slots
 
 
+# ═══════════════════════════════════════════════════ القنوات والربط
+#: (المصدر، الاسم بالعربي، الاسم بالإنجليزي، العمولة، بادئة رقم الغرفة)
+CHANNELS: list[tuple[BookingSource, str, str, str, str]] = [
+    (BookingSource.BOOKING_COM, "بوكينج", "Booking.com", "17", "BDC"),
+    (BookingSource.AGODA, "أجودا", "Agoda", "15", "AGD"),
+    (BookingSource.EXPEDIA, "إكسبيديا", "Expedia", "16", "EXP"),
+    (BookingSource.AIRBNB, "إير بي إن بي", "Airbnb", "14", "ABB"),
+]
+
+
+def create_channels(
+    db: Session, prop: Property, cats: dict[str, UnitCategory], plans: list[RatePlan]
+) -> tuple[int, int]:
+    """القنوات وربط الغرف — بيتعمل مرة واحدة وبيتخطّى لو موجود.
+
+    الربط بيتعمل على الفئات القابلة للبيع أونلاين بس: الخيام والجلسات
+    بتتباع على الطبيعة، فمالهاش لازمة على بوكينج.
+    """
+    existing = {
+        c.source: c
+        for c in db.execute(
+            select(Channel).where(Channel.property_id == prop.id)
+        ).scalars().all()
+    }
+    public_plan = next((p for p in plans if p.is_public), plans[0] if plans else None)
+    online_cats = [
+        c for c in cats.values()
+        if c.kind in (UnitKind.ROOM, UnitKind.CHALET, UnitKind.VILLA, UnitKind.SUITE)
+    ]
+
+    made = mapped = 0
+    for source, name_ar, name_en, commission, prefix in CHANNELS:
+        channel = existing.get(source)
+        if channel is None:
+            channel = Channel(
+                property_id=prop.id,
+                source=source,
+                name_ar=name_ar,
+                name_en=name_en,
+                is_active=True,
+                # بوكينج وأجودا متوصّلين، والباقي مستني اعتماد — ده الواقع
+                is_connected=source in (BookingSource.BOOKING_COM, BookingSource.AGODA),
+                commission_percent=Decimal(commission),
+                external_property_id=f"{prefix}-{prop.code}-{prop.id:04d}",
+            )
+            db.add(channel)
+            db.flush()
+            made += 1
+
+        if channel.mappings:
+            continue
+        for category in online_cats:
+            db.add(
+                ChannelMapping(
+                    channel_id=channel.id,
+                    property_id=prop.id,
+                    unit_category_id=category.id,
+                    rate_plan_id=public_plan.id if public_plan else None,
+                    external_room_id=f"{prefix}-{category.code}",
+                    external_rate_id=f"{prefix}-RATE-{public_plan.code}" if public_plan else None,
+                    allocation=0,
+                    is_active=True,
+                )
+            )
+            mapped += 1
+    db.flush()
+    return made, mapped
+
+
 # ═══════════════════════════════════════════════════════════ التشغيل
 def run(years_back: int = 2, months_forward: int = 6) -> None:
     Base.metadata.create_all(engine)
@@ -910,6 +991,9 @@ def run(years_back: int = 2, months_forward: int = 6) -> None:
         print("المنيو...")
         items = create_menu(db, prop, outlets, stations)
 
+        print("القنوات وربط الغرف...")
+        made_channels, mapped_rooms = create_channels(db, prop, cats, plans)
+
         print(f"نشر الأسعار والإتاحة من {start} إلى {end} (ممكن ياخد شوية)...")
         published, slots = publish_calendar(db, prop, cats, plans, start, end)
 
@@ -931,6 +1015,7 @@ def run(years_back: int = 2, months_forward: int = 6) -> None:
         print(f"  محطات المطبخ         {len(stations)}")
         print(f"  الطاولات             {tables}")
         print(f"  أصناف المنيو         {items}")
+        print(f"  قنوات البيع          {made_channels}  (ربط: {mapped_rooms})")
         print(f"  أسعار منشورة         {published:,}")
         print(f"  صفوف عدّاد الإتاحة   {slots:,}")
         print("─" * 52)

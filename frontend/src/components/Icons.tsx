@@ -68,6 +68,18 @@ export const IconGrid = ({ size = 20, className }: P) => (
   </svg>
 );
 
+/** الربط بالقنوات — عقدة مركزية بتوزّع على أطراف */
+export const IconLink = ({ size = 20, className }: P) => (
+  <svg {...base(size)} className={className} aria-hidden="true">
+    <circle cx="12" cy="12" r="2.6" />
+    <circle cx="4.5" cy="5" r="1.8" />
+    <circle cx="19.5" cy="5" r="1.8" />
+    <circle cx="4.5" cy="19" r="1.8" />
+    <circle cx="19.5" cy="19" r="1.8" />
+    <path d="m6 6.3 4 4M18 6.3l-4 4M6 17.7l4-4M18 17.7l-4-4" />
+  </svg>
+);
+
 export const IconChart = ({ size = 20, className }: P) => (
   <svg {...base(size)} className={className} aria-hidden="true">
     <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />

@@ -8,6 +8,12 @@ from app.models.analytics import (
     NightAuditRun,
 )
 from app.models.billing import DocumentSequence, Invoice, InvoiceLine
+from app.models.channels import (
+    Channel,
+    ChannelBooking,
+    ChannelMapping,
+    ChannelMessage,
+)
 from app.models.folio import Folio, FolioLine, Payment
 from app.models.guests import Company, Guest, GuestDocument
 from app.models.organization import Property
@@ -99,6 +105,11 @@ __all__ = [
     "Invoice",
     "InvoiceLine",
     "DocumentSequence",
+    # channels
+    "Channel",
+    "ChannelMapping",
+    "ChannelMessage",
+    "ChannelBooking",
     # analytics
     "DailyStatistics",
     "DailyCategoryStatistics",

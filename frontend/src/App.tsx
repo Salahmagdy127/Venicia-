@@ -11,6 +11,7 @@ const Dashboard = lazy(() => import("@/pages/Dashboard"));
 const TapeChart = lazy(() => import("@/pages/TapeChart"));
 const FrontDesk = lazy(() => import("@/pages/FrontDesk"));
 const Inventory = lazy(() => import("@/pages/Inventory"));
+const Channels = lazy(() => import("@/pages/Channels"));
 const Guests = lazy(() => import("@/pages/Guests"));
 const Pos = lazy(() => import("@/pages/Pos"));
 const Housekeeping = lazy(() => import("@/pages/Housekeeping"));
@@ -89,6 +90,14 @@ export default function App() {
           element={
             <Suspense fallback={<Loading />}>
               <Inventory />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/channels"
+          element={
+            <Suspense fallback={<Loading />}>
+              <Channels />
             </Suspense>
           }
         />

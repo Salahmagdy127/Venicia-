@@ -16,6 +16,7 @@ from sqlalchemy import text
 
 from app.api.v1 import (
     auth,
+    channels,
     dashboard,
     folio,
     inventory,
@@ -83,6 +84,7 @@ app.include_router(reservations.router, prefix=settings.API_V1_PREFIX)
 app.include_router(folio.router, prefix=settings.API_V1_PREFIX)
 app.include_router(pos.router, prefix=settings.API_V1_PREFIX)
 app.include_router(inventory.router, prefix=settings.API_V1_PREFIX)
+app.include_router(channels.router, prefix=settings.API_V1_PREFIX)
 app.include_router(operations.router, prefix=settings.API_V1_PREFIX)
 app.include_router(dashboard.router, prefix=settings.API_V1_PREFIX)
 

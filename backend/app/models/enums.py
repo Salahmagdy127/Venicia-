@@ -99,6 +99,37 @@ class BookingSource(StrEnum):
     CORPORATE = "CORPORATE"          # عقد شركات
 
 
+# ------------------------------------------------------- الربط بالقنوات
+class ChannelMessageKind(StrEnum):
+    """نوع الرسالة الطالعة للقناة."""
+
+    AVAILABILITY = "AVAILABILITY"    # عدد الوحدات المتاحة
+    RATE = "RATE"                    # السعر
+    STOP_SELL = "STOP_SELL"          # قفل أو فتح البيع
+
+
+class ChannelMessageStatus(StrEnum):
+    PENDING = "PENDING"              # في الطابور
+    SENT = "SENT"                    # اتبعت واتأكدت
+    FAILED = "FAILED"                # فشلت وهتتعاد
+    SKIPPED = "SKIPPED"              # الفئة دي مش مربوطة على القناة
+
+
+class ChannelBookingAction(StrEnum):
+    """الحجز الجاي من القناة بيعمل إيه."""
+
+    NEW = "NEW"                      # حجز جديد
+    MODIFY = "MODIFY"                # تعديل على حجز قايم
+    CANCEL = "CANCEL"                # إلغاء
+
+
+class ChannelBookingStatus(StrEnum):
+    PROCESSED = "PROCESSED"          # اتنفّذ
+    DUPLICATE = "DUPLICATE"          # وصل قبل كده — اتجاهل
+    REJECTED = "REJECTED"            # مرفوض (مفيش إتاحة أو مفيش ربط)
+    FAILED = "FAILED"                # خطأ فني
+
+
 class MealPlan(StrEnum):
     RO = "RO"    # غرفة فقط — Room Only
     BB = "BB"    # إفطار — Bed & Breakfast

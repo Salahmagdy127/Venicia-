@@ -483,6 +483,103 @@ export type WaitlistResult = {
   reservation_code: string | null;
 };
 
+/* ────────────────────────────────────────── الربط بالقنوات */
+export type ChannelMapping = {
+  id: number;
+  unit_category_id: number;
+  category_name_ar: string;
+  category_name_en: string;
+  rate_plan_id: number | null;
+  rate_plan_name_ar: string | null;
+  external_room_id: string;
+  external_rate_id: string | null;
+  allocation: number;
+  is_active: boolean;
+};
+
+export type Channel = {
+  id: number;
+  source: string;
+  name_ar: string;
+  name_en: string;
+  is_active: boolean;
+  is_connected: boolean;
+  commission_percent: string;
+  external_property_id: string | null;
+  last_push_at: string | null;
+  last_pull_at: string | null;
+  pushed_count: number;
+  pulled_count: number;
+  error_count: number;
+  last_error: string | null;
+  pending: number;
+  failed: number;
+  sent_today: number;
+  mapped_categories: number;
+  bookings_today: number;
+  rejected_today: number;
+  mappings: ChannelMapping[];
+};
+
+export type ChannelBoard = {
+  channels: Channel[];
+  total_pending: number;
+  total_failed: number;
+  unmapped_categories: number[];
+};
+
+export type ChannelMessageKind = "AVAILABILITY" | "RATE" | "STOP_SELL";
+export type ChannelMessageStatus = "PENDING" | "SENT" | "FAILED" | "SKIPPED";
+
+export type ChannelMessage = {
+  id: number;
+  channel_id: number;
+  channel_source: string;
+  unit_category_id: number | null;
+  category_name_ar: string | null;
+  kind: ChannelMessageKind;
+  status: ChannelMessageStatus;
+  start_date: string;
+  end_date: string;
+  reason: string | null;
+  attempts: number;
+  created_at: string;
+  sent_at: string | null;
+  error: string | null;
+};
+
+export type ChannelBookingAction = "NEW" | "MODIFY" | "CANCEL";
+export type ChannelBookingStatus = "PROCESSED" | "DUPLICATE" | "REJECTED" | "FAILED";
+
+export type ChannelBookingRow = {
+  id: number;
+  channel_id: number;
+  channel_source: string;
+  external_reference: string;
+  action: ChannelBookingAction;
+  status: ChannelBookingStatus;
+  guest_name: string | null;
+  guest_phone: string | null;
+  arrival_date: string | null;
+  departure_date: string | null;
+  gross_amount: string;
+  commission_amount: string;
+  reservation_id: number | null;
+  reservation_code: string | null;
+  error: string | null;
+  received_at: string;
+};
+
+export type SyncResult = {
+  ok: boolean;
+  message_ar: string;
+  message_en: string;
+  sent: number;
+  failed: number;
+  skipped: number;
+  queued: number;
+};
+
 /* ───────────────────────────────────────────── تدقيق الليلة */
 export type AuditWarnings = {
   open_folios: number;
