@@ -37,6 +37,7 @@ const DICT: Record<string, [string, string]> = {
   "nav.housekeeping": ["الهاوس كيبينج", "Housekeeping"],
   "nav.reports": ["التقارير", "Reports"],
   "nav.settings": ["الإعدادات", "Settings"],
+  "nav.book": ["صفحة الحجز المباشر", "Direct booking page"],
 
   // الدخول
   "login.title": ["تسجيل الدخول", "Sign in"],
@@ -663,6 +664,53 @@ const DICT: Record<string, [string, string]> = {
   "ch.simulateSend": ["ابعت", "Send"],
   "ch.emptyQueue": ["الطابور فاضي", "Queue is empty"],
   "ch.emptyInbound": ["مفيش حجوزات واردة لسه", "No inbound bookings yet"],
+  // الحجز المباشر — الصفحة العامة
+  "be.title": ["احجز إقامتك", "Book your stay"],
+  "be.subtitle": [
+    "الحجز المباشر من هنا — نفس الأسعار من غير عمولة وسيط.",
+    "Book direct — the same rates, without a middleman's commission.",
+  ],
+  "be.search": ["ابحث", "Search"],
+  "be.pick": ["احجز دي", "Select"],
+  "be.upTo": ["يستوعب لحد", "Sleeps up to"],
+  "be.forNights": ["إجمالي {n} ليالي", "Total for {n} nights"],
+  "be.perNight": ["الليلة", "Per night"],
+  "be.taxIncluded": ["شامل الخدمة والضريبة", "Service & VAT included"],
+  "be.fewLeft": ["فاضل {n} بس", "Only {n} left"],
+  "be.noRooms": ["مفيش متاح في التواريخ دي", "Nothing available for these dates"],
+  "be.noRoomsHint": [
+    "جرّب تواريخ قريبة، أو كلّمنا وهنشوف لك حل.",
+    "Try nearby dates, or call us and we will find you something.",
+  ],
+  "be.yourDetails": ["بياناتك", "Your details"],
+  "be.holdNote": [
+    "الوحدة محجوزة لك خلال الوقت ده. لو خلص بترجع للبيع.",
+    "The unit is held for you during this window. After that it goes back on sale.",
+  ],
+  "be.firstName": ["الاسم الأول", "First name"],
+  "be.lastName": ["اسم العيلة", "Last name"],
+  "be.email": ["الإيميل", "Email"],
+  "be.payDeposit": ["أدفع العربون دلوقتي", "Pay the deposit now"],
+  "be.depositHint": [
+    "الباقي بيتدفع عند الوصول.",
+    "The balance is settled on arrival.",
+  ],
+  "be.back": ["رجوع", "Back"],
+  "be.confirm": ["أكّد الحجز", "Confirm booking"],
+  "be.expired": ["المهلة خلصت", "Hold expired"],
+  "be.confirmed": ["تم الحجز", "You are booked"],
+  "be.confirmedHint": [
+    "هيوصلك تأكيد على الموبايل. احتفظ برقم الحجز.",
+    "A confirmation is on its way. Keep your booking code.",
+  ],
+  "be.checkIn": ["الدخول", "Check-in"],
+  "be.checkOut": ["الخروج", "Check-out"],
+  "be.pricesInclude": [
+    "الأسعار شاملة خدمة {s}% وضريبة {v}%",
+    "Prices include {s}% service and {v}% VAT",
+  ],
+  "be.another": ["احجز إقامة تانية", "Book another stay"],
+
   "ch.queueNote": [
     "الرسالة بتتبني وقت الإرسال من آخر إتاحة — يعني خمس حجوزات على نفس اليوم بيطلعوا رقم واحد صح.",
     "Payloads are built at send time from the latest availability — five bookings on one day go out as a single correct number.",

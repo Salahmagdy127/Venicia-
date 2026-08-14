@@ -84,6 +84,16 @@ export default function Layout() {
               <span className="truncate">{t(labelKey)}</span>
             </NavLink>
           ))}
+          {/* صفحة الحجز العامة — بتتفتح في تبويب جديد لأنها للزوار مش للموظفين */}
+          <a
+            href="/book"
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-3 h-11 px-3 rounded-[6px] text-[14px] hover:bg-white/8 text-sidebar-ink mt-1 border-t border-white/10 pt-3"
+          >
+            <IconWaves size={19} />
+            <span className="truncate">{t("nav.book")}</span>
+          </a>
         </nav>
 
         <div className="px-3 pb-3 pt-2 border-t border-white/10">

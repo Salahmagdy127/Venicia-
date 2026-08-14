@@ -48,6 +48,7 @@ from app.models.pos import Outlet, PosOrder, Shift
 from app.models.reservations import Reservation, ReservationNight, ReservationUnit
 from app.models.units import Unit, UnitCategory
 from app.services import availability as av
+from app.services import booking_engine as be
 from app.services import reservations as res_svc
 from app.services import waitlist as wl
 
@@ -618,6 +619,8 @@ def run(
         # العروض المنتهية بترجع وحداتها للبيع، والطلبات اللي فات ميعادها بتتقفل
         wl.expire_offers(db, property_id)
         wl.expire_stale(db, property_id, today=target)
+        # سلال الحجز الإلكتروني المتروكة بترجع للبيع كمان
+        be.release_expired(db, property_id)
         nights_posted, room_revenue = post_pending_nights(db, property_id, target)
         compute_statistics(db, property_id, target)
         refresh_departed_guests(db, property_id, target)

@@ -483,6 +483,110 @@ export type WaitlistResult = {
   reservation_code: string | null;
 };
 
+/* ───────────────────────────────────────── الحجز المباشر */
+export type PublicCategory = {
+  id: number;
+  code: string;
+  name_ar: string;
+  name_en: string;
+  description_ar: string | null;
+  description_en: string | null;
+  kind: string;
+  base_occupancy: number;
+  max_occupancy: number;
+  area_sqm: number | null;
+  bed_configuration: string | null;
+  amenities_ar: string | null;
+  amenities_en: string | null;
+  from_rate: string;
+  unit_count: number;
+};
+
+export type PublicProperty = {
+  name_ar: string;
+  name_en: string;
+  city: string | null;
+  address: string | null;
+  phone: string | null;
+  email: string | null;
+  currency: string;
+  check_in_time: string;
+  check_out_time: string;
+  vat_percent: string;
+  service_charge_percent: string;
+  categories: PublicCategory[];
+};
+
+export type PublicOffer = {
+  unit_category_id: number;
+  name_ar: string;
+  name_en: string;
+  description_ar: string | null;
+  description_en: string | null;
+  kind: string;
+  max_occupancy: number;
+  area_sqm: number | null;
+  bed_configuration: string | null;
+  amenities_ar: string | null;
+  amenities_en: string | null;
+  nights: number;
+  room_total: string;
+  service_charge_total: string;
+  tax_total: string;
+  grand_total: string;
+  average_nightly_rate: string;
+  left: number;
+  nights_detail: { stay_date: string; rate: string }[];
+};
+
+export type SearchOut = {
+  arrival_date: string;
+  departure_date: string;
+  nights: number;
+  adults: number;
+  children: number;
+  currency: string;
+  offers: PublicOffer[];
+};
+
+export type HoldOut = {
+  token: string;
+  expires_at: string;
+  hold_minutes: number;
+  unit_category_id: number;
+  name_ar: string;
+  name_en: string;
+  arrival_date: string;
+  departure_date: string;
+  nights: number;
+  adults: number;
+  children: number;
+  room_total: string;
+  service_charge_total: string;
+  tax_total: string;
+  grand_total: string;
+  deposit_required: string;
+};
+
+export type BookingOut = {
+  code: string;
+  status: string;
+  guest_name: string;
+  arrival_date: string;
+  departure_date: string;
+  nights: number;
+  adults: number;
+  children: number;
+  category_name_ar: string;
+  category_name_en: string;
+  grand_total: string;
+  paid_total: string;
+  balance: string;
+  check_in_time: string;
+  check_out_time: string;
+  special_requests: string | null;
+};
+
 /* ────────────────────────────────────────── الربط بالقنوات */
 export type ChannelMapping = {
   id: number;

@@ -41,6 +41,8 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 12
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
+    #: مهلة سلة الحجز الإلكتروني — الوحدة محجوزة للزائر خلالها وبعدها بترجع للبيع
+    BOOKING_HOLD_MINUTES: int = 15
 
     # --- Localisation ----------------------------------------------------
     DEFAULT_LOCALE: str = "ar"

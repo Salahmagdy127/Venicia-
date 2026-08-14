@@ -12,7 +12,8 @@ from app.core.config import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-TokenType = Literal["access", "refresh"]
+#: ``hold`` توكن سلة الحجز الإلكتروني — عمره قصير ومنفصل عن توكن الدخول
+TokenType = Literal["access", "refresh", "hold"]
 
 
 def hash_password(plain: str) -> str:
@@ -35,6 +36,8 @@ def create_token(
     now = datetime.now(timezone.utc)
     if token_type == "access":
         expires = now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    elif token_type == "hold":
+        expires = now + timedelta(minutes=settings.BOOKING_HOLD_MINUTES)
     else:
         expires = now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
 

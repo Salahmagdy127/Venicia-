@@ -12,6 +12,8 @@ const TapeChart = lazy(() => import("@/pages/TapeChart"));
 const FrontDesk = lazy(() => import("@/pages/FrontDesk"));
 const Inventory = lazy(() => import("@/pages/Inventory"));
 const Channels = lazy(() => import("@/pages/Channels"));
+// صفحة الحجز العامة — بره الشريط الجانبي وبره تسجيل الدخول
+const Book = lazy(() => import("@/pages/Book"));
 const Guests = lazy(() => import("@/pages/Guests"));
 const Pos = lazy(() => import("@/pages/Pos"));
 const Housekeeping = lazy(() => import("@/pages/Housekeeping"));
@@ -51,6 +53,16 @@ export default function App() {
           <PublicOnly>
             <Login />
           </PublicOnly>
+        }
+      />
+
+      {/* صفحة الحجز مفتوحة للجمهور — مش وراها تسجيل دخول */}
+      <Route
+        path="/book"
+        element={
+          <Suspense fallback={<FullScreenLoading />}>
+            <Book />
+          </Suspense>
         }
       />
 
