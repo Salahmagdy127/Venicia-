@@ -15,11 +15,13 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 
 from app.api.v1 import (
+    accounting,
     auth,
     booking_engine,
     channels,
     dashboard,
     folio,
+    hr,
     inventory,
     invoices,
     maintenance,
@@ -95,6 +97,8 @@ app.include_router(invoices.router, prefix=settings.API_V1_PREFIX)
 app.include_router(maintenance.router, prefix=settings.API_V1_PREFIX)
 app.include_router(public_menu.router, prefix=settings.API_V1_PREFIX)
 app.include_router(stock.router, prefix=settings.API_V1_PREFIX)
+app.include_router(accounting.router, prefix=settings.API_V1_PREFIX)
+app.include_router(hr.router, prefix=settings.API_V1_PREFIX)
 app.include_router(operations.router, prefix=settings.API_V1_PREFIX)
 app.include_router(dashboard.router, prefix=settings.API_V1_PREFIX)
 

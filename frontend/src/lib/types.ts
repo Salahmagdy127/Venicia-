@@ -631,6 +631,258 @@ export type VarianceReport = {
   was_clamped: boolean;
 };
 
+/* ────────────────────────────────────────── الحسابات */
+export type AccountType = "ASSET" | "LIABILITY" | "EQUITY" | "REVENUE" | "EXPENSE";
+
+export type JournalSource =
+  | "MANUAL"
+  | "ROOM_REVENUE"
+  | "POS_REVENUE"
+  | "PAYMENT"
+  | "REFUND"
+  | "PURCHASE"
+  | "CONSUMPTION"
+  | "WASTE"
+  | "PAYROLL"
+  | "OPENING"
+  | "CLOSING";
+
+export type AccountOut = {
+  id: number;
+  code: string;
+  name_ar: string;
+  name_en: string;
+  account_type: AccountType;
+  parent_id: number | null;
+  is_postable: boolean;
+  balance: string;
+  debit_total: string;
+  credit_total: string;
+};
+
+export type AccountingBoard = {
+  as_of: string;
+  month_revenue: string;
+  month_expenses: string;
+  month_profit: string;
+  margin_percent: string;
+  cash_on_hand: string;
+  bank: string;
+  guest_ledger: string;
+  city_ledger: string;
+  suppliers_due: string;
+  inventory_value: string;
+  vat_payable: string;
+  service_payable: string;
+  is_balanced: boolean;
+  unposted_days: string[];
+};
+
+export type TrialRow = {
+  account_id: number;
+  code: string;
+  name_ar: string;
+  name_en: string;
+  account_type: AccountType;
+  debit: string;
+  credit: string;
+  balance: string;
+};
+
+export type TrialBalance = {
+  since: string | null;
+  until: string | null;
+  rows: TrialRow[];
+  total_debit: string;
+  total_credit: string;
+  difference: string;
+  is_balanced: boolean;
+};
+
+export type FinancialLine = {
+  code: string;
+  name_ar: string;
+  name_en: string;
+  amount: string;
+};
+
+export type IncomeStatement = {
+  since: string;
+  until: string;
+  revenue: FinancialLine[];
+  expenses: FinancialLine[];
+  total_revenue: string;
+  total_expenses: string;
+  net_profit: string;
+  margin_percent: string;
+};
+
+export type BalanceSheet = {
+  as_of: string;
+  assets: FinancialLine[];
+  liabilities: FinancialLine[];
+  equity: FinancialLine[];
+  total_assets: string;
+  total_liabilities: string;
+  total_equity: string;
+  retained_profit: string;
+  difference: string;
+  is_balanced: boolean;
+};
+
+export type JournalLineOut = {
+  account_id: number;
+  account_code: string;
+  account_name_ar: string;
+  debit: string;
+  credit: string;
+  description_ar: string | null;
+  cost_center_id: number | null;
+  reference: string | null;
+};
+
+export type JournalEntryOut = {
+  id: number;
+  number: string;
+  business_date: string;
+  status: "DRAFT" | "POSTED" | "REVERSED";
+  source: JournalSource;
+  description_ar: string;
+  total_debit: string;
+  total_credit: string;
+  posted_at: string | null;
+  reverses_entry_id: number | null;
+  reversed_by_entry_id: number | null;
+  reversal_reason: string | null;
+  lines: JournalLineOut[];
+};
+
+export type LedgerRow = {
+  entry_id: number;
+  entry_number: string;
+  business_date: string;
+  description_ar: string | null;
+  reference: string | null;
+  debit: string;
+  credit: string;
+  running_balance: string;
+};
+
+export type AccountLedger = {
+  account: AccountOut;
+  since: string | null;
+  until: string | null;
+  rows: LedgerRow[];
+};
+
+export type PostingResult = {
+  business_date: string;
+  posted: number;
+  entries: string[];
+  skipped: string[];
+  errors: string[];
+  total_debit: string;
+};
+
+/* ────────────────────────────────────────── شؤون العاملين */
+export type EmploymentStatus = "ACTIVE" | "PROBATION" | "SUSPENDED" | "TERMINATED";
+export type PayrollStatus = "DRAFT" | "APPROVED" | "PAID" | "CANCELLED";
+
+export type DepartmentOut = {
+  id: number;
+  code: string;
+  name_ar: string;
+  name_en: string;
+  cost_center_id: number | null;
+  headcount: number;
+};
+
+export type EmployeeOut = {
+  id: number;
+  code: string;
+  name_ar: string;
+  name_en: string;
+  department_id: number;
+  department_name_ar: string;
+  job_title_ar: string;
+  job_title_en: string;
+  status: EmploymentStatus;
+  contract_type: string;
+  hire_date: string;
+  basic_salary: string;
+  allowances: string;
+  gross_salary: string;
+  insurance_salary: string;
+  service_points: string;
+  is_insured: boolean;
+  phone: string | null;
+  annual_leave_balance: string;
+};
+
+export type StaffBoard = {
+  headcount: number;
+  monthly_payroll_cost: string;
+  departments: DepartmentOut[];
+  employees: EmployeeOut[];
+};
+
+export type PayslipOut = {
+  employee_id: number;
+  employee_code: string;
+  employee_name_ar: string;
+  job_title_ar: string;
+  department_id: number;
+  basic_salary: string;
+  allowances: string;
+  overtime: string;
+  service_share: string;
+  bonus: string;
+  gross: string;
+  insurance_employee: string;
+  insurance_employer: string;
+  income_tax: string;
+  unpaid_leave: string;
+  unpaid_days: string;
+  advances: string;
+  penalties: string;
+  total_deductions: string;
+  net_pay: string;
+};
+
+export type DepartmentCostOut = {
+  department_id: number;
+  name_ar: string;
+  headcount: number;
+  gross: string;
+  employer_cost: string;
+};
+
+export type PayrollRunOut = {
+  id: number;
+  number: string;
+  year: number;
+  month: number;
+  label: string;
+  status: PayrollStatus;
+  headcount: number;
+  service_pool: string;
+  total_gross: string;
+  total_insurance_employee: string;
+  total_insurance_employer: string;
+  total_tax: string;
+  total_deductions: string;
+  total_net: string;
+  total_cost: string;
+  approved_at: string | null;
+  paid_at: string | null;
+  journal_entry_id: number | null;
+};
+
+export type PayrollDetail = PayrollRunOut & {
+  payslips: PayslipOut[];
+  by_department: DepartmentCostOut[];
+};
+
 /* ────────────────────────────────────────── منيو الـ QR العام */
 export type PublicMenuItem = {
   name_ar: string;

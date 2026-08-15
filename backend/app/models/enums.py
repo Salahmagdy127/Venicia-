@@ -382,6 +382,90 @@ class EtaStatus(StrEnum):
     FAILED = "FAILED"                # فشل الإرسال
 
 
+# ---------------------------------------------------------------- المحاسبة
+class AccountType(StrEnum):
+    """نوع الحساب في دليل الحسابات — بيحدّد طبيعة الرصيد ومكانه في القوائم."""
+
+    ASSET = "ASSET"                  # أصول
+    LIABILITY = "LIABILITY"          # التزامات
+    EQUITY = "EQUITY"                # حقوق ملكية
+    REVENUE = "REVENUE"              # إيرادات
+    EXPENSE = "EXPENSE"              # مصروفات
+
+
+#: الحسابات اللي رصيدها الطبيعي مدين — الباقي دائن
+DEBIT_NORMAL_ACCOUNTS: frozenset[AccountType] = frozenset(
+    {AccountType.ASSET, AccountType.EXPENSE}
+)
+
+#: حسابات قائمة الدخل — بتتقفل آخر السنة. الباقي بيرحّل رصيده للميزانية.
+INCOME_STATEMENT_ACCOUNTS: frozenset[AccountType] = frozenset(
+    {AccountType.REVENUE, AccountType.EXPENSE}
+)
+
+
+class JournalSource(StrEnum):
+    """مصدر القيد — بيخلّي كل قيد يرجّعك للمستند اللي طلّعه.
+
+    القيود التلقائية بتتولّد من الحركة التشغيلية، فمحدش بيكتبها بإيده
+    ومحدش يقدر يعدّلها. اليدوي بس هو اللي بيتكتب.
+    """
+
+    MANUAL = "MANUAL"                # قيد يدوي
+    ROOM_REVENUE = "ROOM_REVENUE"    # إيراد الإقامة من النايت أوديت
+    POS_REVENUE = "POS_REVENUE"      # إيراد المطاعم والبار
+    PAYMENT = "PAYMENT"              # تحصيل
+    REFUND = "REFUND"                # استرداد
+    PURCHASE = "PURCHASE"            # استلام مشتريات
+    CONSUMPTION = "CONSUMPTION"      # صرف مخزني (تكلفة المبيعات)
+    WASTE = "WASTE"                  # هالك وتسويات الجرد
+    PAYROLL = "PAYROLL"              # مسيّر المرتبات
+    OPENING = "OPENING"              # أرصدة افتتاحية
+    CLOSING = "CLOSING"              # قيد إقفال السنة
+
+
+class JournalStatus(StrEnum):
+    DRAFT = "DRAFT"                  # مسودة — مش داخلة الأرصدة
+    POSTED = "POSTED"                # مرحّلة
+    REVERSED = "REVERSED"            # اتعكست بقيد مضاد
+
+
+class PeriodStatus(StrEnum):
+    OPEN = "OPEN"                    # مفتوحة للترحيل
+    CLOSED = "CLOSED"                # مقفولة — مفيش ترحيل جديد
+
+
+# ---------------------------------------------------------------- شؤون العاملين
+class EmploymentStatus(StrEnum):
+    ACTIVE = "ACTIVE"                # على رأس العمل
+    PROBATION = "PROBATION"          # تحت التجربة
+    SUSPENDED = "SUSPENDED"          # موقوف
+    TERMINATED = "TERMINATED"        # انتهت خدمته
+
+
+class ContractType(StrEnum):
+    """نوع التعاقد — بيفرق في التأمينات والمستحقات."""
+
+    FULL_TIME = "FULL_TIME"          # دوام كامل
+    SEASONAL = "SEASONAL"            # موسمي — القرى السياحية بتشغّل الصيف
+    PART_TIME = "PART_TIME"          # جزئي
+    DAILY = "DAILY"                  # باليومية
+
+
+class PayrollStatus(StrEnum):
+    DRAFT = "DRAFT"                  # لسه بيتحسب — ممكن يتعدّل
+    APPROVED = "APPROVED"            # اعتمد وترحّل للدفتر
+    PAID = "PAID"                    # اتصرف
+    CANCELLED = "CANCELLED"
+
+
+class LeaveKind(StrEnum):
+    ANNUAL = "ANNUAL"                # سنوية
+    SICK = "SICK"                    # مرضية
+    UNPAID = "UNPAID"                # بدون أجر — بتتخصم
+    EMERGENCY = "EMERGENCY"          # عارضة
+
+
 # ---------------------------------------------------------------- التسعير
 class RateRuleType(StrEnum):
     """قواعد التسعير الديناميكي فوق السعر الأساسي."""

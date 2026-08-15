@@ -1,6 +1,13 @@
 """كل نماذج النظام — استيراد موحّد عشان Alembic يشوف الجداول كلها."""
 
 from app.db.base import Base
+from app.models.accounting import (
+    Account,
+    AccountingPeriod,
+    CostCenter,
+    JournalEntry,
+    JournalLine,
+)
 from app.models.analytics import (
     DailyCategoryStatistics,
     DailyOutletStatistics,
@@ -28,6 +35,13 @@ from app.models.stock import (
 )
 from app.models.folio import Folio, FolioLine, Payment
 from app.models.guests import Company, Guest, GuestDocument
+from app.models.hr import (
+    Department,
+    Employee,
+    LeaveRequest,
+    PayrollRun,
+    Payslip,
+)
 from app.models.organization import Property
 from app.models.pos import (
     KitchenStation,
@@ -135,6 +149,18 @@ __all__ = [
     "RecipeLine",
     "PurchaseOrder",
     "PurchaseOrderLine",
+    # accounting
+    "Account",
+    "CostCenter",
+    "AccountingPeriod",
+    "JournalEntry",
+    "JournalLine",
+    # hr
+    "Department",
+    "Employee",
+    "LeaveRequest",
+    "PayrollRun",
+    "Payslip",
     # analytics
     "DailyStatistics",
     "DailyCategoryStatistics",

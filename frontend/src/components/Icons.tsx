@@ -76,6 +76,24 @@ export const IconBox = ({ size = 20, className }: P) => (
   </svg>
 );
 
+/** الحسابات — ميزان بكفّتين */
+export const IconScale = ({ size = 20, className }: P) => (
+  <svg {...base(size)} className={className} aria-hidden="true">
+    <path d="M12 3v18M7 21h10" />
+    <path d="M4.5 7h15M8 7 5 14M5 14h6M5 14a3 3 0 0 0 6 0M16 7l3 7M19 14h-6M13 14a3 3 0 0 0 6 0" />
+  </svg>
+);
+
+/** العاملون — مجموعة أفراد */
+export const IconStaff = ({ size = 20, className }: P) => (
+  <svg {...base(size)} className={className} aria-hidden="true">
+    <circle cx="12" cy="7" r="3" />
+    <path d="M6.5 20a5.5 5.5 0 0 1 11 0" />
+    <path d="M5.5 11.5a2.4 2.4 0 1 0-2-3.8M3 18c0-1.7.7-3 1.9-3.8" />
+    <path d="M18.5 11.5a2.4 2.4 0 1 1 2-3.8M21 18c0-1.7-.7-3-1.9-3.8" />
+  </svg>
+);
+
 /** الصيانة — مفتاح إنجليزي */
 export const IconWrench = ({ size = 20, className }: P) => (
   <svg {...base(size)} className={className} aria-hidden="true">

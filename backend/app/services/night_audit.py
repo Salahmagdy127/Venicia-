@@ -49,6 +49,7 @@ from app.models.reservations import Reservation, ReservationNight, ReservationUn
 from app.models.units import Unit, UnitCategory
 from app.services import availability as av
 from app.services import booking_engine as be
+from app.services import gl_posting as gl
 from app.services import reservations as res_svc
 from app.services import waitlist as wl
 
@@ -622,6 +623,9 @@ def run(
         # سلال الحجز الإلكتروني المتروكة بترجع للبيع كمان
         be.release_expired(db, property_id)
         nights_posted, room_revenue = post_pending_nights(db, property_id, target)
+        # الترحيل المحاسبي بعد ترحيل الليالي مباشرة — كده القيود بتشوف
+        # اليوم كامل. الخطوة idempotent، فإعادة التشغيل مبتكرّرش قيد.
+        posting = gl.post_day(db, property_id, target)
         compute_statistics(db, property_id, target)
         refresh_departed_guests(db, property_id, target)
         warnings = collect_warnings(db, property_id, target)
@@ -631,6 +635,9 @@ def run(
         audit_run.room_revenue_posted = room_revenue
         audit_run.folios_closed = 0
         audit_run.open_folios_remaining = warnings["open_folios"]
+        warnings["journals_posted"] = posting.posted
+        if posting.errors:
+            warnings["journal_errors"] = posting.errors
         audit_run.warnings = warnings
         audit_run.status = "COMPLETED"
         audit_run.finished_at = utcnow()

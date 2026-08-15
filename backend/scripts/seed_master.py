@@ -16,10 +16,12 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.core.security import hash_password
 from app.db.base import Base, SessionLocal, engine
+from app.models.accounting import Account, CostCenter
 from app.models.channels import Channel, ChannelMapping
 from app.models.maintenance import MinibarItem
 from app.models.stock import StockItem, Supplier, Warehouse
 from app.models.enums import (
+    AccountType,
     AdjustmentMethod,
     BookingSource,
     HousekeepingStatus,
@@ -127,6 +129,14 @@ PERMISSIONS: list[tuple[str, str, str, str]] = [
     ("maintenance.manage", "maintenance", "إدارة بلاغات الصيانة", "Manage maintenance tickets"),
     ("stock.view", "stock", "عرض المخزن", "View inventory"),
     ("stock.manage", "stock", "حركات المخزن والمشتريات", "Manage stock & purchasing"),
+    ("gl.view", "gl", "عرض الحسابات والقوائم", "View ledger & statements"),
+    ("gl.post", "gl", "ترحيل قيود", "Post journal entries"),
+    ("gl.close", "gl", "إقفال الفترات المحاسبية", "Close accounting periods"),
+    ("hr.view", "hr", "عرض بيانات العاملين", "View employees"),
+    ("hr.manage", "hr", "إدارة العاملين والإجازات", "Manage employees & leave"),
+    ("payroll.view", "payroll", "عرض المرتبات", "View payroll"),
+    ("payroll.run", "payroll", "حساب مسيّر المرتبات", "Run payroll"),
+    ("payroll.approve", "payroll", "اعتماد وصرف المرتبات", "Approve & pay payroll"),
     ("admin.users", "admin", "إدارة المستخدمين", "Manage users"),
     ("admin.settings", "admin", "إعدادات النظام", "System settings"),
 ]
@@ -223,6 +233,20 @@ ROLES: list[tuple[str, str, str, int, list[str]]] = [
             "folio.view", "report.financial", "report.operational", "report.audit",
             "invoice.issue", "invoice.cancel", "nightaudit.run", "channel.view",
             "stock.view",
+            # المحاسب هو صاحب الدفتر — بيرحّل ويقفل الشهور
+            "gl.view", "gl.post", "gl.close",
+            # وبيحسب المسيّر، بس الاعتماد مش من حقه
+            "hr.view", "payroll.view", "payroll.run",
+        ],
+    ),
+    (
+        "HR_MANAGER",
+        "مدير شؤون العاملين",
+        "HR Manager",
+        0,
+        [
+            "hr.view", "hr.manage", "payroll.view", "payroll.run",
+            "report.operational",
         ],
     ),
 ]
@@ -297,6 +321,7 @@ USERS: list[tuple[str, str, str, str, str]] = [
     ("tarek", "طارق منير", "Tarek Mounir", "RESTAURANT_MANAGER", "venicia2026"),
     ("samia", "سامية جمال", "Samia Gamal", "HOUSEKEEPING", "venicia2026"),
     ("hesham", "هشام لطفي", "Hesham Lotfy", "ACCOUNTANT", "venicia2026"),
+    ("nadia", "نادية القاضي", "Nadia El-Kady", "HR_MANAGER", "venicia2026"),
 ]
 
 
@@ -1036,6 +1061,308 @@ def create_warehouses(
     return made_wh, made_sup, made_item
 
 
+# ═══════════════════════════════════════════════════ دليل الحسابات
+#: (كود، عربي، إنجليزي، النوع، طرفي؟)
+#: الترقيم المصري المتعارف عليه: 1 أصول · 2 التزامات · 3 ملكية · 4 إيراد · 5 مصروف
+ACCOUNTS: list[tuple[str, str, str, AccountType, bool]] = [
+    # ── الأصول ──
+    ("1", "الأصول", "Assets", AccountType.ASSET, False),
+    ("11", "النقدية وما في حكمها", "Cash and equivalents", AccountType.ASSET, False),
+    ("1110", "الخزينة", "Cash on hand", AccountType.ASSET, True),
+    ("1120", "البنك", "Bank", AccountType.ASSET, True),
+    ("1130", "شيكات تحت التحصيل", "Cheques in hand", AccountType.ASSET, True),
+    ("12", "المدينون", "Receivables", AccountType.ASSET, False),
+    ("1210", "حسابات النزلاء", "Guest ledger", AccountType.ASSET, True),
+    ("1220", "حسابات الشركات والقنوات", "City ledger", AccountType.ASSET, True),
+    ("13", "المخزون", "Inventory", AccountType.ASSET, False),
+    ("1310", "مخزون أغذية ومشروبات", "F&B inventory", AccountType.ASSET, True),
+    ("1320", "مخزون مستهلكات", "Supplies inventory", AccountType.ASSET, True),
+    ("14", "الأصول الثابتة", "Fixed assets", AccountType.ASSET, False),
+    ("1410", "مبانٍ ومنشآت", "Buildings", AccountType.ASSET, True),
+    ("1420", "أثاث وتجهيزات", "Furniture and equipment", AccountType.ASSET, True),
+    # ── الالتزامات ──
+    ("2", "الالتزامات", "Liabilities", AccountType.LIABILITY, False),
+    ("21", "الدائنون", "Payables", AccountType.LIABILITY, False),
+    ("2110", "الموردون", "Suppliers", AccountType.LIABILITY, True),
+    ("22", "المستحقات", "Accruals", AccountType.LIABILITY, False),
+    ("2210", "ضريبة القيمة المضافة المستحقة", "VAT payable", AccountType.LIABILITY, True),
+    ("2230", "الخدمة المستحقة للعاملين", "Service charge payable", AccountType.LIABILITY, True),
+    ("2410", "مرتبات مستحقة", "Salaries payable", AccountType.LIABILITY, True),
+    ("2420", "التأمينات الاجتماعية مستحقة", "Social insurance payable", AccountType.LIABILITY, True),
+    ("2430", "ضريبة كسب العمل مستحقة", "Payroll tax payable", AccountType.LIABILITY, True),
+    # ── حقوق الملكية ──
+    ("3", "حقوق الملكية", "Equity", AccountType.EQUITY, False),
+    ("3100", "رأس المال", "Capital", AccountType.EQUITY, True),
+    ("3900", "أرباح محتجزة", "Retained earnings", AccountType.EQUITY, True),
+    # ── الإيرادات ──
+    ("4", "الإيرادات", "Revenue", AccountType.REVENUE, False),
+    ("41", "إيراد الإقامة", "Rooms revenue", AccountType.REVENUE, False),
+    ("4110", "إيراد الإقامة", "Room revenue", AccountType.REVENUE, True),
+    ("42", "إيراد الأغذية والمشروبات", "F&B revenue", AccountType.REVENUE, False),
+    ("4210", "إيراد المأكولات", "Food revenue", AccountType.REVENUE, True),
+    ("4220", "إيراد المشروبات", "Beverage revenue", AccountType.REVENUE, True),
+    ("43", "إيراد الخدمات", "Service revenue", AccountType.REVENUE, False),
+    ("4310", "إيراد السبا", "Spa revenue", AccountType.REVENUE, True),
+    ("4320", "إيراد الأنشطة والرحلات", "Activities revenue", AccountType.REVENUE, True),
+    ("44", "إيرادات أخرى", "Other revenue", AccountType.REVENUE, False),
+    ("4410", "الميني بار", "Minibar", AccountType.REVENUE, True),
+    ("4420", "المغسلة", "Laundry", AccountType.REVENUE, True),
+    ("4490", "إيرادات متنوعة", "Miscellaneous revenue", AccountType.REVENUE, True),
+    ("4910", "غرامات إلغاء وعدم حضور", "Cancellation and no-show fees", AccountType.REVENUE, True),
+    # ── المصروفات ──
+    ("5", "المصروفات", "Expenses", AccountType.EXPENSE, False),
+    ("51", "تكلفة المبيعات", "Cost of sales", AccountType.EXPENSE, False),
+    ("5110", "تكلفة المأكولات", "Food cost", AccountType.EXPENSE, True),
+    ("5120", "تكلفة المشروبات", "Beverage cost", AccountType.EXPENSE, True),
+    ("5190", "الهالك وفروق الجرد", "Waste and stock variance", AccountType.EXPENSE, True),
+    ("52", "تكاليف العاملين", "Payroll costs", AccountType.EXPENSE, False),
+    ("5210", "المرتبات والأجور", "Salaries and wages", AccountType.EXPENSE, True),
+    ("5220", "حصة صاحب العمل — تأمينات", "Employer social insurance", AccountType.EXPENSE, True),
+    ("5230", "الخدمة الموزّعة على العاملين", "Service charge distributed", AccountType.EXPENSE, True),
+    ("53", "مصروفات التشغيل", "Operating expenses", AccountType.EXPENSE, False),
+    ("5310", "الكهرباء والمياه", "Utilities", AccountType.EXPENSE, True),
+    ("5320", "الصيانة والإصلاح", "Repairs and maintenance", AccountType.EXPENSE, True),
+    ("5410", "عمولات القنوات", "Channel commissions", AccountType.EXPENSE, True),
+    ("5510", "الضيافة والمجاملات", "Complimentary", AccountType.EXPENSE, True),
+    ("5610", "الخصومات الممنوحة", "Discounts given", AccountType.EXPENSE, True),
+    ("5910", "مصروفات إدارية", "Administrative expenses", AccountType.EXPENSE, True),
+]
+
+#: (كود، عربي، إنجليزي، كود المنفذ المرتبط)
+COST_CENTERS: list[tuple[str, str, str, str | None]] = [
+    ("ROOMS", "الإقامة", "Rooms", None),
+    ("FNB", "الأغذية والمشروبات", "Food and beverage", "REST"),
+    ("SPA", "السبا", "Spa", "SPA"),
+    ("ACT", "الأنشطة", "Activities", None),
+    ("ADMIN", "الإدارة", "Administration", None),
+]
+
+
+def create_chart_of_accounts(
+    db: Session, prop: Property, outlets: dict[str, Outlet]
+) -> tuple[int, int]:
+    """دليل الحسابات ومراكز التكلفة — آمن التكرار.
+
+    الحسابات دي مرجعية: كود الترحيل بينادي عليها بالكود النصّي، فلو
+    واحد اتشال الترحيل بيقع بصوت عالي بدل ما يترحّل في حساب غلط.
+    """
+    have = {
+        a.code: a
+        for a in db.execute(
+            select(Account).where(Account.property_id == prop.id)
+        ).scalars().all()
+    }
+    made = 0
+    for order, (code, name_ar, name_en, kind, postable) in enumerate(ACCOUNTS):
+        if code in have:
+            continue
+        parent = have.get(code[:-2]) or have.get(code[:1]) if len(code) > 1 else None
+        account = Account(
+            property_id=prop.id,
+            code=code,
+            name_ar=name_ar,
+            name_en=name_en,
+            account_type=kind,
+            parent_id=parent.id if parent else None,
+            is_postable=postable,
+            is_system=True,
+            sort_order=order,
+            is_active=True,
+        )
+        db.add(account)
+        have[code] = account
+        made += 1
+    db.flush()
+
+    have_centers = {
+        c.code
+        for c in db.execute(
+            select(CostCenter).where(CostCenter.property_id == prop.id)
+        ).scalars().all()
+    }
+    made_centers = 0
+    for order, (code, name_ar, name_en, outlet_code) in enumerate(COST_CENTERS):
+        if code in have_centers:
+            continue
+        db.add(
+            CostCenter(
+                property_id=prop.id,
+                code=code,
+                name_ar=name_ar,
+                name_en=name_en,
+                outlet_id=outlets[outlet_code].id if outlet_code in outlets else None,
+                sort_order=order,
+                is_active=True,
+            )
+        )
+        made_centers += 1
+    db.flush()
+    return made, made_centers
+
+
+# ═══════════════════════════════════════════════════ العاملون
+#: (كود، عربي، إنجليزي، مركز التكلفة)
+DEPARTMENTS: list[tuple[str, str, str, str]] = [
+    ("FO", "الاستقبال", "Front office", "ROOMS"),
+    ("HK", "الإشراف الداخلي", "Housekeeping", "ROOMS"),
+    ("FNB", "الأغذية والمشروبات", "Food and beverage", "FNB"),
+    ("KIT", "المطبخ", "Kitchen", "FNB"),
+    ("ENG", "الصيانة", "Engineering", "ADMIN"),
+    ("SPA", "السبا والأنشطة", "Spa and activities", "SPA"),
+    ("ADM", "الإدارة والحسابات", "Administration", "ADMIN"),
+    ("SEC", "الأمن", "Security", "ADMIN"),
+]
+
+#: (كود القسم، الوظيفة عربي، إنجليزي، العدد، الأساسي، البدلات، نقاط الخدمة)
+#: المرتبات على مستويات السوق المصري لقرية سياحية متوسطة
+STAFF_PLAN: list[tuple[str, str, str, int, str, str, str]] = [
+    ("ADM", "المدير العام", "General manager", 1, "45000", "12000", "3"),
+    ("ADM", "مدير مالي", "Financial controller", 1, "28000", "6000", "2"),
+    ("ADM", "محاسب", "Accountant", 2, "12000", "2500", "1.5"),
+    ("ADM", "أخصائي موارد بشرية", "HR specialist", 1, "11000", "2000", "1.5"),
+    ("FO", "مدير الاستقبال", "Front office manager", 1, "18000", "4000", "2.5"),
+    ("FO", "موظف استقبال", "Receptionist", 6, "7500", "1800", "1.5"),
+    ("FO", "حجوزات", "Reservations agent", 2, "8000", "1800", "1.5"),
+    ("FO", "بل بوي", "Bell boy", 3, "5000", "1200", "1"),
+    ("HK", "سوبرفايزر إشراف داخلي", "Housekeeping supervisor", 2, "9000", "2000", "1.5"),
+    ("HK", "عامل نظافة", "Room attendant", 14, "5000", "1200", "1"),
+    ("HK", "عامل غسيل", "Laundry attendant", 3, "5000", "1000", "1"),
+    ("FNB", "مدير المطعم", "Restaurant manager", 1, "16000", "3500", "2.5"),
+    ("FNB", "كابتن", "Captain", 3, "8000", "1800", "2"),
+    ("FNB", "ويتر", "Waiter", 12, "5200", "1200", "1.5"),
+    ("FNB", "بارتندر", "Bartender", 3, "6500", "1500", "1.5"),
+    ("FNB", "كاشير", "Cashier", 3, "6500", "1500", "1"),
+    ("KIT", "شيف تنفيذي", "Executive chef", 1, "24000", "5000", "3"),
+    ("KIT", "سو شيف", "Sous chef", 2, "13000", "2800", "2"),
+    ("KIT", "طباخ", "Line cook", 8, "7000", "1600", "1.5"),
+    ("KIT", "مساعد مطبخ", "Kitchen helper", 6, "4800", "1000", "1"),
+    ("KIT", "أمين مخزن", "Storekeeper", 2, "7000", "1500", "1"),
+    ("ENG", "مهندس صيانة", "Maintenance engineer", 1, "15000", "3200", "2"),
+    ("ENG", "فني تكييف", "AC technician", 2, "7500", "1600", "1"),
+    ("ENG", "فني كهرباء", "Electrician", 2, "7000", "1500", "1"),
+    ("ENG", "فني سباكة", "Plumber", 2, "6800", "1500", "1"),
+    ("ENG", "عامل حدائق", "Gardener", 4, "4800", "1000", "1"),
+    ("SPA", "مدير السبا", "Spa manager", 1, "14000", "3000", "2"),
+    ("SPA", "معالج سبا", "Spa therapist", 4, "7500", "1600", "1.5"),
+    ("SPA", "منقذ", "Lifeguard", 3, "5500", "1200", "1"),
+    ("SPA", "منسق أنشطة", "Activities coordinator", 2, "6500", "1400", "1.5"),
+    ("SEC", "مشرف أمن", "Security supervisor", 1, "9000", "2000", "1"),
+    ("SEC", "فرد أمن", "Security guard", 8, "5000", "1100", "1"),
+]
+
+#: أسماء لتوليد بيانات العرض
+FIRST_NAMES = [
+    ("أحمد", "Ahmed"), ("محمد", "Mohamed"), ("محمود", "Mahmoud"), ("مصطفى", "Mostafa"),
+    ("كريم", "Karim"), ("عمرو", "Amr"), ("خالد", "Khaled"), ("طارق", "Tarek"),
+    ("سيد", "Sayed"), ("حسن", "Hassan"), ("إبراهيم", "Ibrahim"), ("يوسف", "Youssef"),
+    ("منى", "Mona"), ("سارة", "Sara"), ("هبة", "Heba"), ("نورا", "Nora"),
+    ("دينا", "Dina"), ("مريم", "Mariam"), ("فاطمة", "Fatma"), ("إيمان", "Eman"),
+]
+LAST_NAMES = [
+    ("عبد الرحمن", "Abdelrahman"), ("السيد", "Elsayed"), ("فتحي", "Fathy"),
+    ("شعبان", "Shaaban"), ("زكي", "Zaki"), ("رمضان", "Ramadan"), ("عوض", "Awad"),
+    ("سليمان", "Soliman"), ("الشناوي", "Elshennawy"), ("منصور", "Mansour"),
+    ("الحسيني", "Elhusseiny"), ("بدر", "Badr"), ("سالم", "Salem"), ("قنديل", "Kandil"),
+]
+
+
+def create_staff(db: Session, prop: Property) -> tuple[int, int]:
+    """الأقسام والموظفين — آمن التكرار.
+
+    الأسماء بتتولّد من قوايم مصرية عشان داتا العرض تبان طبيعية. الأجر
+    التأميني بيتحط مساوي للأساسي وهو العرف الشائع، والحساب بيقصّه على
+    الحد الأقصى القانوني لوحده.
+    """
+    import random
+
+    from app.models.accounting import CostCenter as _CostCenter
+    from app.models.enums import ContractType as _ContractType
+    from app.models.enums import EmploymentStatus as _Status
+    from app.models.enums import Gender as _Gender
+    from app.models.hr import Department as _Department
+    from app.models.hr import Employee as _Employee
+
+    centers = {
+        c.code: c
+        for c in db.execute(
+            select(_CostCenter).where(_CostCenter.property_id == prop.id)
+        ).scalars().all()
+    }
+    have_departments = {
+        d.code: d
+        for d in db.execute(
+            select(_Department).where(_Department.property_id == prop.id)
+        ).scalars().all()
+    }
+    made_departments = 0
+    for order, (code, name_ar, name_en, center_code) in enumerate(DEPARTMENTS):
+        if code in have_departments:
+            continue
+        department = _Department(
+            property_id=prop.id, code=code, name_ar=name_ar, name_en=name_en,
+            cost_center_id=centers[center_code].id if center_code in centers else None,
+            sort_order=order, is_active=True,
+        )
+        db.add(department)
+        have_departments[code] = department
+        made_departments += 1
+    db.flush()
+
+    have_employees = {
+        e.code for e in db.execute(
+            select(_Employee).where(_Employee.property_id == prop.id)
+        ).scalars().all()
+    }
+    if have_employees:
+        return made_departments, 0
+
+    rng = random.Random(1979)
+    today = date.today()
+    made = 0
+    serial = 0
+    for dept_code, title_ar, title_en, count, basic, allowance, points in STAFF_PLAN:
+        for _ in range(count):
+            serial += 1
+            code = f"EMP{serial:03d}"
+            if code in have_employees:
+                continue
+            first_ar, first_en = rng.choice(FIRST_NAMES)
+            last_ar, last_en = rng.choice(LAST_NAMES)
+            # الأقدمية بتتوزّع على 6 سنين — الإدارة أقدم من العمالة
+            senior = Decimal(basic) > Decimal("12000")
+            years = rng.uniform(2.0, 6.0) if senior else rng.uniform(0.3, 4.0)
+            hire = today - timedelta(days=int(years * 365))
+            female = first_ar in {"منى", "سارة", "هبة", "نورا", "دينا", "مريم", "فاطمة", "إيمان"}
+            db.add(
+                _Employee(
+                    property_id=prop.id,
+                    code=code,
+                    name_ar=f"{first_ar} {last_ar}",
+                    name_en=f"{first_en} {last_en}",
+                    department_id=have_departments[dept_code].id,
+                    job_title_ar=title_ar,
+                    job_title_en=title_en,
+                    status=(
+                        _Status.PROBATION if hire > today - timedelta(days=90)
+                        else _Status.ACTIVE
+                    ),
+                    contract_type=_ContractType.FULL_TIME,
+                    gender=_Gender.FEMALE if female else _Gender.MALE,
+                    hire_date=hire,
+                    basic_salary=Decimal(basic),
+                    allowances=Decimal(allowance),
+                    insurance_salary=Decimal(basic),
+                    service_points=Decimal(points),
+                    is_insured=True,
+                    phone=f"01{rng.randint(0, 2)}{rng.randint(10000000, 99999999)}",
+                    annual_leave_balance=Decimal(21 if years < 10 else 30),
+                )
+            )
+            made += 1
+    db.flush()
+    return made_departments, made
+
+
 # ═══════════════════════════════════════════════════════ الميني بار
 #: (الكود، عربي، إنجليزي، السعر، فيه كحول)
 MINIBAR: list[tuple[str, str, str, str, bool]] = [
@@ -1103,7 +1430,9 @@ def create_channels(
             select(Channel).where(Channel.property_id == prop.id)
         ).scalars().all()
     }
-    public_plan = next((p for p in plans if p.is_public), plans[0] if plans else None)
+    # ``plans`` قاموس بالكود — لازم نمشي على القيم مش المفاتيح
+    ordered = list(plans.values())
+    public_plan = next((p for p in ordered if p.is_public), ordered[0] if ordered else None)
     online_cats = [
         c for c in cats.values()
         if c.kind in (UnitKind.ROOM, UnitKind.CHALET, UnitKind.VILLA, UnitKind.SUITE)
@@ -1193,6 +1522,12 @@ def run(years_back: int = 2, months_forward: int = 6) -> None:
         print("المخازن والموردين والأصناف...")
         made_wh, made_sup, made_item = create_warehouses(db, prop, outlets)
 
+        print("دليل الحسابات ومراكز التكلفة...")
+        made_accounts, made_centers = create_chart_of_accounts(db, prop, outlets)
+
+        print("الأقسام والعاملون...")
+        made_departments, made_staff = create_staff(db, prop)
+
         print("الميني بار...")
         minibar_items = create_minibar(db, prop)
 
@@ -1223,7 +1558,8 @@ def run(years_back: int = 2, months_forward: int = 6) -> None:
         print(f"  قنوات البيع          {made_channels}  (ربط: {mapped_rooms})")
         print(f"  أصناف الميني بار     {minibar_items}")
         print(f"  المخازن              {made_wh}  ·  موردين {made_sup}  ·  أصناف {made_item}")
-        print(f"  المخازن              {made_wh}  ·  موردين {made_sup}  ·  أصناف {made_item}")
+        print(f"  دليل الحسابات        {made_accounts}  ·  مراكز تكلفة {made_centers}")
+        print(f"  الأقسام              {made_departments}  ·  العاملون {made_staff}")
         print(f"  أسعار منشورة         {published:,}")
         print(f"  صفوف عدّاد الإتاحة   {slots:,}")
         print("─" * 52)

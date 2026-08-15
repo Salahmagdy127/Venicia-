@@ -15,6 +15,8 @@ const Channels = lazy(() => import("@/pages/Channels"));
 const Invoices = lazy(() => import("@/pages/Invoices"));
 const Maintenance = lazy(() => import("@/pages/Maintenance"));
 const Stock = lazy(() => import("@/pages/Stock"));
+const Accounting = lazy(() => import("@/pages/Accounting"));
+const Staff = lazy(() => import("@/pages/Staff"));
 // صفحة الحجز العامة — بره الشريط الجانبي وبره تسجيل الدخول
 const Book = lazy(() => import("@/pages/Book"));
 const Menu = lazy(() => import("@/pages/Menu"));
@@ -146,6 +148,22 @@ export default function App() {
           element={
             <Suspense fallback={<Loading />}>
               <Invoices />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/accounting"
+          element={
+            <Suspense fallback={<Loading />}>
+              <Accounting />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/staff"
+          element={
+            <Suspense fallback={<Loading />}>
+              <Staff />
             </Suspense>
           }
         />
