@@ -15,6 +15,17 @@ from app.models.channels import (
     ChannelMessage,
 )
 from app.models.maintenance import MaintenanceTicket, MinibarItem
+from app.models.stock import (
+    PurchaseOrder,
+    PurchaseOrderLine,
+    Recipe,
+    RecipeLine,
+    StockItem,
+    StockLevel,
+    StockMovement,
+    Supplier,
+    Warehouse,
+)
 from app.models.folio import Folio, FolioLine, Payment
 from app.models.guests import Company, Guest, GuestDocument
 from app.models.organization import Property
@@ -114,6 +125,16 @@ __all__ = [
     # maintenance
     "MaintenanceTicket",
     "MinibarItem",
+    # stock
+    "Supplier",
+    "Warehouse",
+    "StockItem",
+    "StockLevel",
+    "StockMovement",
+    "Recipe",
+    "RecipeLine",
+    "PurchaseOrder",
+    "PurchaseOrderLine",
     # analytics
     "DailyStatistics",
     "DailyCategoryStatistics",

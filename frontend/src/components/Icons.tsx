@@ -68,6 +68,14 @@ export const IconGrid = ({ size = 20, className }: P) => (
   </svg>
 );
 
+/** المخازن — كرتونة */
+export const IconBox = ({ size = 20, className }: P) => (
+  <svg {...base(size)} className={className} aria-hidden="true">
+    <path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5Z" />
+    <path d="M3 7.5 12 12l9-4.5M12 12v9" />
+  </svg>
+);
+
 /** الصيانة — مفتاح إنجليزي */
 export const IconWrench = ({ size = 20, className }: P) => (
   <svg {...base(size)} className={className} aria-hidden="true">

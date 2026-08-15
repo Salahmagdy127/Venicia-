@@ -18,6 +18,7 @@ from app.core.security import hash_password
 from app.db.base import Base, SessionLocal, engine
 from app.models.channels import Channel, ChannelMapping
 from app.models.maintenance import MinibarItem
+from app.models.stock import StockItem, Supplier, Warehouse
 from app.models.enums import (
     AdjustmentMethod,
     BookingSource,
@@ -25,8 +26,10 @@ from app.models.enums import (
     MealPlan,
     OutletType,
     RateRuleType,
+    StockUnit,
     UnitCondition,
     UnitKind,
+    WarehouseKind,
 )
 from app.models.organization import Property
 from app.models.pos import (
@@ -122,6 +125,8 @@ PERMISSIONS: list[tuple[str, str, str, str]] = [
     ("channel.manage", "channel", "إدارة القنوات والربط", "Manage channels & mapping"),
     ("maintenance.view", "maintenance", "عرض بلاغات الصيانة", "View maintenance tickets"),
     ("maintenance.manage", "maintenance", "إدارة بلاغات الصيانة", "Manage maintenance tickets"),
+    ("stock.view", "stock", "عرض المخزن", "View inventory"),
+    ("stock.manage", "stock", "حركات المخزن والمشتريات", "Manage stock & purchasing"),
     ("admin.users", "admin", "إدارة المستخدمين", "Manage users"),
     ("admin.settings", "admin", "إعدادات النظام", "System settings"),
 ]
@@ -194,6 +199,8 @@ ROLES: list[tuple[str, str, str, int, list[str]]] = [
             "pos.view", "pos.order", "pos.void", "pos.discount",
             "pos.discount.approve", "pos.room_charge", "pos.shift.close",
             "report.operational",
+            # مدير المطعم هو اللي بيمسك المخزن والوصفات فعلياً
+            "stock.view", "stock.manage",
         ],
     ),
     (
@@ -215,6 +222,7 @@ ROLES: list[tuple[str, str, str, int, list[str]]] = [
         [
             "folio.view", "report.financial", "report.operational", "report.audit",
             "invoice.issue", "invoice.cancel", "nightaudit.run", "channel.view",
+            "stock.view",
         ],
     ),
 ]
@@ -916,6 +924,118 @@ def _link_room_service(db: Session, prop: Property, outlets: dict[str, Outlet]) 
     return linked
 
 
+# ═══════════════════════════════════════════ المخازن والموردين والأصناف
+#: (الكود، عربي، إنجليزي، النوع، كود المنفذ)
+WAREHOUSES: list[tuple[str, str, str, WarehouseKind, str | None]] = [
+    ("WH-MAIN", "المخزن الرئيسي", "Main store", WarehouseKind.MAIN, None),
+    ("WH-KIT", "مخزن المطبخ", "Kitchen store", WarehouseKind.KITCHEN, "REST"),
+    ("WH-BAR", "مخزن البار", "Bar store", WarehouseKind.BAR, "BAR"),
+    ("WH-HK", "مخزن الهاوس كيبينج", "Housekeeping store", WarehouseKind.HOUSEKEEPING, None),
+]
+
+#: (الكود، عربي، إنجليزي، الموبايل، مهلة السداد)
+SUPPLIERS: list[tuple[str, str, str, str, int]] = [
+    ("SUP-MEAT", "الفيوم للحوم", "Fayoum Meats", "+20 84 220 1100", 30),
+    ("SUP-FISH", "أسماك البحيرة", "Lake Fisheries", "+20 84 220 2200", 15),
+    ("SUP-VEG", "مزارع الواحة", "Oasis Farms", "+20 84 220 3300", 7),
+    ("SUP-DRY", "التموين المصري", "Egyptian Provisions", "+20 2 3855 4400", 30),
+    ("SUP-BEV", "توزيع المشروبات", "Beverage Distributors", "+20 2 3855 5500", 21),
+]
+
+#: (الكود، عربي، إنجليزي، التصنيف، الوحدة، التكلفة، حد الطلب، كمية الطلب، المورد، حرج)
+STOCK_ITEMS: list[tuple] = [
+    # لحوم وأسماك
+    ("ST-BEEF", "لحم بقري", "Beef", "لحوم", "Meat", StockUnit.KG, "320", "25", "40", "SUP-MEAT", True),
+    ("ST-LAMB", "لحم ضاني", "Lamb", "لحوم", "Meat", StockUnit.KG, "410", "15", "25", "SUP-MEAT", True),
+    ("ST-CHICK", "دجاج", "Chicken", "لحوم", "Meat", StockUnit.KG, "110", "30", "50", "SUP-MEAT", False),
+    ("ST-BASS", "قاروص", "Sea bass", "أسماك", "Fish", StockUnit.KG, "260", "20", "35", "SUP-FISH", True),
+    ("ST-SHRMP", "جمبري", "Shrimp", "أسماك", "Fish", StockUnit.KG, "480", "10", "20", "SUP-FISH", True),
+    # خضار
+    ("ST-TOM", "طماطم", "Tomato", "خضار", "Vegetables", StockUnit.KG, "18", "20", "40", "SUP-VEG", False),
+    ("ST-ONION", "بصل", "Onion", "خضار", "Vegetables", StockUnit.KG, "15", "20", "40", "SUP-VEG", False),
+    ("ST-POT", "بطاطس", "Potato", "خضار", "Vegetables", StockUnit.KG, "16", "30", "60", "SUP-VEG", False),
+    ("ST-LETT", "خس", "Lettuce", "خضار", "Vegetables", StockUnit.KG, "22", "8", "15", "SUP-VEG", False),
+    ("ST-LEMON", "ليمون", "Lemon", "خضار", "Vegetables", StockUnit.KG, "28", "10", "20", "SUP-VEG", False),
+    # جافة ومستهلكات
+    ("ST-RICE", "أرز", "Rice", "جافة", "Dry goods", StockUnit.KG, "34", "40", "80", "SUP-DRY", False),
+    ("ST-OIL", "زيت", "Cooking oil", "جافة", "Dry goods", StockUnit.LITRE, "62", "25", "50", "SUP-DRY", False),
+    ("ST-BUTTER", "زبدة", "Butter", "ألبان", "Dairy", StockUnit.KG, "185", "10", "20", "SUP-DRY", False),
+    ("ST-CHEESE", "جبنة", "Cheese", "ألبان", "Dairy", StockUnit.KG, "210", "8", "15", "SUP-DRY", False),
+    ("ST-FLOUR", "دقيق", "Flour", "جافة", "Dry goods", StockUnit.KG, "21", "30", "60", "SUP-DRY", False),
+    ("ST-SPICE", "بهارات مشكلة", "Mixed spices", "جافة", "Dry goods", StockUnit.KG, "140", "5", "10", "SUP-DRY", False),
+    # مشروبات
+    ("ST-COFFEE", "بن", "Coffee beans", "مشروبات", "Beverages", StockUnit.KG, "380", "8", "15", "SUP-BEV", False),
+    ("ST-TEA", "شاي", "Tea", "مشروبات", "Beverages", StockUnit.KG, "160", "5", "10", "SUP-BEV", False),
+    ("ST-SODA", "مشروبات غازية", "Soft drinks", "مشروبات", "Beverages", StockUnit.BOTTLE, "9", "120", "240", "SUP-BEV", False),
+    ("ST-WATER", "مياه معدنية", "Bottled water", "مشروبات", "Beverages", StockUnit.BOTTLE, "4", "200", "400", "SUP-BEV", False),
+]
+
+
+def create_warehouses(
+    db: Session, prop: Property, outlets: dict[str, Outlet]
+) -> tuple[int, int, int]:
+    """المخازن والموردين والأصناف — كلهم آمنين التكرار."""
+    made_wh = made_sup = made_item = 0
+
+    existing = {
+        w.code for w in db.execute(
+            select(Warehouse).where(Warehouse.property_id == prop.id)
+        ).scalars().all()
+    }
+    for order, (code, ar, en, kind, outlet_code) in enumerate(WAREHOUSES):
+        if code in existing:
+            continue
+        db.add(
+            Warehouse(
+                property_id=prop.id, code=code, name_ar=ar, name_en=en, kind=kind,
+                outlet_id=outlets[outlet_code].id if outlet_code in outlets else None,
+                sort_order=order, is_active=True,
+            )
+        )
+        made_wh += 1
+    db.flush()
+
+    have_sup = {
+        s.code: s for s in db.execute(
+            select(Supplier).where(Supplier.property_id == prop.id)
+        ).scalars().all()
+    }
+    for code, ar, en, phone, terms in SUPPLIERS:
+        if code in have_sup:
+            continue
+        supplier = Supplier(
+            property_id=prop.id, code=code, name_ar=ar, name_en=en,
+            phone=phone, payment_terms_days=terms, is_active=True,
+        )
+        db.add(supplier)
+        have_sup[code] = supplier
+        made_sup += 1
+    db.flush()
+
+    have_items = {
+        s.code for s in db.execute(
+            select(StockItem).where(StockItem.property_id == prop.id)
+        ).scalars().all()
+    }
+    for order, row in enumerate(STOCK_ITEMS):
+        (code, ar, en, cat_ar, cat_en, unit, cost, reorder, qty, sup_code, critical) = row
+        if code in have_items:
+            continue
+        db.add(
+            StockItem(
+                property_id=prop.id, code=code, name_ar=ar, name_en=en,
+                category_ar=cat_ar, category_en=cat_en, unit=unit,
+                average_cost=Decimal(cost), last_purchase_cost=Decimal(cost),
+                reorder_level=Decimal(reorder), reorder_quantity=Decimal(qty),
+                preferred_supplier_id=have_sup[sup_code].id if sup_code in have_sup else None,
+                is_critical=critical, sort_order=order, is_active=True,
+            )
+        )
+        made_item += 1
+    db.flush()
+    return made_wh, made_sup, made_item
+
+
 # ═══════════════════════════════════════════════════════ الميني بار
 #: (الكود، عربي، إنجليزي، السعر، فيه كحول)
 MINIBAR: list[tuple[str, str, str, str, bool]] = [
@@ -1070,6 +1190,9 @@ def run(years_back: int = 2, months_forward: int = 6) -> None:
         print("المنيو...")
         items = create_menu(db, prop, outlets, stations)
 
+        print("المخازن والموردين والأصناف...")
+        made_wh, made_sup, made_item = create_warehouses(db, prop, outlets)
+
         print("الميني بار...")
         minibar_items = create_minibar(db, prop)
 
@@ -1099,6 +1222,8 @@ def run(years_back: int = 2, months_forward: int = 6) -> None:
         print(f"  أصناف المنيو         {items}")
         print(f"  قنوات البيع          {made_channels}  (ربط: {mapped_rooms})")
         print(f"  أصناف الميني بار     {minibar_items}")
+        print(f"  المخازن              {made_wh}  ·  موردين {made_sup}  ·  أصناف {made_item}")
+        print(f"  المخازن              {made_wh}  ·  موردين {made_sup}  ·  أصناف {made_item}")
         print(f"  أسعار منشورة         {published:,}")
         print(f"  صفوف عدّاد الإتاحة   {slots:,}")
         print("─" * 52)

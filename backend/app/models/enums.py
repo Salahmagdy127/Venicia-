@@ -99,6 +99,59 @@ class BookingSource(StrEnum):
     CORPORATE = "CORPORATE"          # عقد شركات
 
 
+# ------------------------------------------------ المخازن والمشتريات
+class StockUnit(StrEnum):
+    """وحدة القياس — الشراء بيبقى بالكرتونة والصرف بالجرام."""
+
+    KG = "KG"
+    GRAM = "GRAM"
+    LITRE = "LITRE"
+    ML = "ML"
+    PIECE = "PIECE"
+    BOTTLE = "BOTTLE"
+    PACK = "PACK"
+    BOX = "BOX"
+
+
+class WarehouseKind(StrEnum):
+    MAIN = "MAIN"                    # المخزن الرئيسي
+    KITCHEN = "KITCHEN"              # مخزن المطبخ اليومي
+    BAR = "BAR"
+    HOUSEKEEPING = "HOUSEKEEPING"
+
+
+class MovementKind(StrEnum):
+    """كل حركة مخزنية. الجدول append-only — الرصيد بيتحسب منه."""
+
+    PURCHASE = "PURCHASE"            # استلام من مورد
+    ISSUE = "ISSUE"                  # صرف للاستهلاك (بيتولّد من الوصفة)
+    TRANSFER_OUT = "TRANSFER_OUT"    # تحويل لمخزن تاني
+    TRANSFER_IN = "TRANSFER_IN"
+    ADJUSTMENT = "ADJUSTMENT"        # تسوية بعد الجرد
+    WASTE = "WASTE"                  # هالك أو تالف
+    RETURN = "RETURN"                # مرتجع للمورد
+
+
+#: الحركات اللي بتزوّد الرصيد — الباقي بيقلّله
+INBOUND_MOVEMENTS: frozenset[MovementKind] = frozenset(
+    {MovementKind.PURCHASE, MovementKind.TRANSFER_IN}
+)
+
+
+class PurchaseStatus(StrEnum):
+    DRAFT = "DRAFT"                  # لسه بتتكتب
+    SENT = "SENT"                    # اتبعتت للمورد
+    PARTIAL = "PARTIAL"              # وصل جزء منها
+    RECEIVED = "RECEIVED"            # وصلت كاملة
+    CANCELLED = "CANCELLED"
+
+
+#: أوامر الشراء اللي لسه ممكن يتستلم عليها
+OPEN_PURCHASE_STATUSES: frozenset[PurchaseStatus] = frozenset(
+    {PurchaseStatus.SENT, PurchaseStatus.PARTIAL}
+)
+
+
 # ---------------------------------------------------------- الصيانة
 class TicketCategory(StrEnum):
     """نوع العطل — بيحدّد الفني اللي بيروح."""

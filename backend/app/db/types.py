@@ -74,6 +74,33 @@ class Money(TypeDecorator):
         return Decimal(str(value)).quantize(MONEY_SCALE)
 
 
+QUANTITY_SCALE = Decimal("0.001")
+
+
+class Quantity(TypeDecorator):
+    """كمية مخزنية بدقة عشرية.
+
+    تلات خانات مش أربعة: أدق حاجة بتتصرف في مطبخ هي الجرام والمللي،
+    وكلاهما بيتكتب بتلات خانات لو الوحدة كيلو أو لتر. الزيادة عن كده
+    بتخزّن ضوضاء الحساب من غير أي فايدة.
+    """
+
+    impl = Numeric(16, 3)
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return None
+        if not isinstance(value, Decimal):
+            value = Decimal(str(value))
+        return value.quantize(QUANTITY_SCALE)
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None
+        return Decimal(str(value)).quantize(QUANTITY_SCALE)
+
+
 class Percent(TypeDecorator):
     """نسبة مئوية (مثال: 14.0000 يعني 14%)."""
 

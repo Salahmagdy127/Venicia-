@@ -468,6 +468,16 @@ def settle(
         if table:
             table.status = TableStatus.FREE
 
+    # خصم مكوّنات الوصفات من المخزن — هنا مش عند الطلب، لأن الأوردر
+    # وهو مفتوح ممكن يتعدّل أو يتلغي والمخزن مالوش دعوة بده. أول ما
+    # يتحاسب، الأكل خرج فعلاً.
+    #
+    # الاستيراد محلي عن قصد: خدمة الوصفات بتقرا الأوردرات، فاستيرادها
+    # فوق كان هيعمل دورة.
+    from app.services import recipes as recipe_svc
+
+    recipe_svc.deplete_for_order(db, order.property_id, order.id, business_date=order.business_date)
+
     db.flush()
     return order
 

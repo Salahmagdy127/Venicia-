@@ -26,6 +26,7 @@ DEFAULTS: dict[str, tuple[str, int]] = {
     "KOT": ("K", 5),
     "SHIFT": ("SH", 5),
     "TICKET": ("MT", 5),
+    "PURCHASE": ("PO", 5),
 }
 
 

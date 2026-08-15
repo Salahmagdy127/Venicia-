@@ -27,6 +27,7 @@ from app.api.v1 import (
     pos,
     public_menu,
     reservations,
+    stock,
     tape_chart,
 )
 from app.core.config import settings
@@ -93,6 +94,7 @@ app.include_router(booking_engine.router, prefix=settings.API_V1_PREFIX)
 app.include_router(invoices.router, prefix=settings.API_V1_PREFIX)
 app.include_router(maintenance.router, prefix=settings.API_V1_PREFIX)
 app.include_router(public_menu.router, prefix=settings.API_V1_PREFIX)
+app.include_router(stock.router, prefix=settings.API_V1_PREFIX)
 app.include_router(operations.router, prefix=settings.API_V1_PREFIX)
 app.include_router(dashboard.router, prefix=settings.API_V1_PREFIX)
 

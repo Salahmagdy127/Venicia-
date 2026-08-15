@@ -483,6 +483,154 @@ export type WaitlistResult = {
   reservation_code: string | null;
 };
 
+/* ──────────────────────────────── المخازن والوصفات والمشتريات */
+export type StockUnitCode =
+  | "KG" | "GRAM" | "LITRE" | "ML" | "PIECE" | "BOTTLE" | "PACK" | "BOX";
+
+export type MovementKind =
+  | "PURCHASE" | "ISSUE" | "TRANSFER_OUT" | "TRANSFER_IN"
+  | "ADJUSTMENT" | "WASTE" | "RETURN";
+
+export type PurchaseStatus = "DRAFT" | "SENT" | "PARTIAL" | "RECEIVED" | "CANCELLED";
+
+export type WarehouseOut = {
+  id: number;
+  code: string;
+  name_ar: string;
+  name_en: string;
+  kind: string;
+  outlet_id: number | null;
+};
+
+export type StockItemOut = {
+  id: number;
+  code: string;
+  name_ar: string;
+  name_en: string;
+  category_ar: string;
+  category_en: string;
+  unit: StockUnitCode;
+  average_cost: string;
+  last_purchase_cost: string;
+  reorder_level: string;
+  reorder_quantity: string;
+  is_critical: boolean;
+  on_hand: string;
+  value: string;
+  is_low: boolean;
+};
+
+export type StockBoard = {
+  total_items: number;
+  total_value: string;
+  low_stock: number;
+  negative: number;
+  warehouses: WarehouseOut[];
+  items: StockItemOut[];
+};
+
+export type StockMovementOut = {
+  id: number;
+  stock_item_id: number;
+  item_name_ar: string;
+  warehouse_id: number;
+  warehouse_name_ar: string;
+  kind: MovementKind;
+  quantity: string;
+  unit_cost: string;
+  total_cost: string;
+  balance_after: string;
+  business_date: string;
+  created_at: string;
+  reason: string | null;
+  purchase_order_id: number | null;
+  pos_order_id: number | null;
+};
+
+export type RecipeLineOut = {
+  stock_item_id: number;
+  item_name_ar: string;
+  unit: StockUnitCode;
+  quantity: string;
+  waste_percent: string;
+  gross_quantity: string;
+  unit_cost: string;
+  line_cost: string;
+};
+
+export type RecipeOut = {
+  menu_item_id: number;
+  menu_item_name_ar: string;
+  menu_item_price: string;
+  warehouse_id: number | null;
+  yield_portions: string;
+  cost: string;
+  margin_percent: string;
+  notes: string | null;
+  lines: RecipeLineOut[];
+};
+
+export type PoLineOut = {
+  id: number;
+  stock_item_id: number;
+  item_name_ar: string;
+  unit: StockUnitCode;
+  quantity_ordered: string;
+  quantity_received: string;
+  outstanding: string;
+  unit_cost: string;
+  line_total: string;
+};
+
+export type PurchaseOut = {
+  id: number;
+  number: string;
+  supplier_id: number;
+  supplier_name_ar: string;
+  warehouse_id: number;
+  status: PurchaseStatus;
+  order_date: string;
+  expected_date: string | null;
+  received_date: string | null;
+  subtotal: string;
+  grand_total: string;
+  supplier_invoice_number: string | null;
+  notes: string | null;
+  lines: PoLineOut[];
+};
+
+export type PurchaseBoard = {
+  draft: number;
+  sent: number;
+  partial: number;
+  received_this_month: number;
+  outstanding_value: string;
+  spend_this_month: string;
+  orders: PurchaseOut[];
+};
+
+export type VarianceRow = {
+  stock_item_id: number;
+  item_name_ar: string;
+  unit: StockUnitCode;
+  theoretical: string;
+  actual: string;
+  waste: string;
+  variance: string;
+  variance_percent: string;
+  cost_impact: string;
+};
+
+export type VarianceReport = {
+  start_date: string;
+  end_date: string;
+  rows: VarianceRow[];
+  total_impact: string;
+  uncovered_items: number;
+  tracking_since: string | null;
+  was_clamped: boolean;
+};
+
 /* ────────────────────────────────────────── منيو الـ QR العام */
 export type PublicMenuItem = {
   name_ar: string;

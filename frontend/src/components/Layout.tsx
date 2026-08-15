@@ -10,6 +10,7 @@ import {
   IconDashboard,
   IconGlobe,
   IconGrid,
+  IconBox,
   IconGuests,
   IconLink,
   IconLogout,
@@ -37,6 +38,7 @@ const NAV: NavItem[] = [
   { to: "/inventory", labelKey: "nav.inventory", icon: IconGrid, permission: "rate.view" },
   { to: "/channels", labelKey: "nav.channels", icon: IconLink, permission: "channel.view" },
   { to: "/invoices", labelKey: "nav.invoices", icon: IconReceipt, permission: "invoice.issue" },
+  { to: "/stock", labelKey: "nav.stock", icon: IconBox, permission: "stock.view" },
   {
     to: "/maintenance",
     labelKey: "nav.maintenance",
