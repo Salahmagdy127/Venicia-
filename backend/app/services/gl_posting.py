@@ -532,8 +532,70 @@ def post_waste(
     )
 
 
+# ═══════════════════════════════════════════════════ 7) إعادة تقييم المخزون
+def post_revaluation(
+    db: Session, property_id: int, business_date: date, *, user: User | None = None
+):
+    """فرق تقييم المخزون بين الدفتر والمخازن.
+
+    **ليه ده موجود:** الدفتر بيجمّع الحركات بتكلفتها **وقت حصولها**،
+    والمخزن بيقيّم الرصيد بمتوسط التكلفة **الحالي**. لما استلام جديد
+    يحرّك المتوسط، قيمة الرصيد القديم بتتغيّر معاه — والدفتر مبيعرفش.
+
+    الفرق ده حقيقي ومش خطأ، بس لازم يترحّل عشان الميزانية تقول نفس رقم
+    شاشة المخازن. من غيره الرقمين بيبعدوا عن بعض شوية كل شهر، ولما
+    المحاسب يلاحظ يبقى الفرق كبير ومحدش عارف جه منين.
+
+    بيترحّل مقابل حساب فروق الجرد، لأن ده فرق تقييم مش حركة بضاعة.
+    """
+    from app.services import accounting as gl
+    from app.services import stock as stock_svc
+
+    book = ZERO
+    for code in ("1310", "1320"):
+        try:
+            book += gl.get_account(db, property_id, code).balance
+        except gl.AccountingError:
+            continue
+
+    real = next(
+        (v.value for v in stock_svc.valuation(db, property_id) if v.warehouse_id is None),
+        ZERO,
+    )
+    difference = money(real - book)
+    # فرق أقل من جنيه تقريب مش انحراف — ترحيله بيملا الدفتر ضوضاء
+    if abs(difference) < Decimal("1"):
+        return None
+
+    if difference > 0:
+        # المخزن أعلى من الدفتر: القيمة زادت بعد تحرّك المتوسط
+        lines = [
+            debit("1310", difference, "إعادة تقييم المخزون"),
+            credit("5190", difference, "فرق تقييم", cost_center_code="FNB"),
+        ]
+    else:
+        lines = [
+            debit("5190", -difference, "فرق تقييم", cost_center_code="FNB"),
+            credit("1310", -difference, "إعادة تقييم المخزون"),
+        ]
+
+    return post(
+        db,
+        property_id,
+        business_date=business_date,
+        lines=lines,
+        description_ar=f"إعادة تقييم المخزون — {business_date}",
+        description_en=f"Inventory revaluation — {business_date}",
+        source=JournalSource.WASTE,
+        source_key=f"REVAL:{business_date}",
+        user=user,
+        skip_if_duplicate=True,
+    )
+
+
 # ═══════════════════════════════════════════════════ التشغيل
-#: الترتيب مقصود — الإيراد قبل التحصيل، والمخزون قبل التكلفة
+#: الترتيب مقصود — الإيراد قبل التحصيل، والمخزون قبل التكلفة،
+#: وإعادة التقييم آخر حاجة عشان تشوف أثر كل اللي فات
 STEPS = (
     ("إيراد الإقامة", post_folio_revenue),
     ("إيراد نقاط البيع", post_pos_revenue),
@@ -541,6 +603,7 @@ STEPS = (
     ("المشتريات", post_purchases),
     ("تكلفة المبيعات", post_consumption),
     ("الهالك", post_waste),
+    ("إعادة تقييم المخزون", post_revaluation),
 )
 
 

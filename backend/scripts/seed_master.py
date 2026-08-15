@@ -1061,6 +1061,37 @@ def create_warehouses(
     return made_wh, made_sup, made_item
 
 
+def reset_stock_costs(db: Session, prop: Property) -> int:
+    """رجوع تكاليف الأصناف لأسعار البذرة وإعادة بناء قيمة المخزون.
+
+    **مبيتشغّلش إلا بطلب صريح** (``--reset-costs``). السبب إن متوسط
+    التكلفة في التشغيل الحقيقي نتيجة مشتريات فعلية، ومسحه بيضيّع معلومة
+    صحيحة.
+
+    بس في داتا العرض بيحصل انحراف: كل تشغيلة اختبار بتستلم بضاعة بسعر
+    أعلى عشان تثبت إن المتوسط بيتحرّك، والتراكم بيوصل الخس لـ112 جنيه
+    للكيلو. الدالة دي بترجّع الأساس وتعيد حساب قيمة المخزون منه.
+    """
+    from app.services import stock as stock_svc
+
+    baseline = {row[0]: Decimal(row[6]) for row in STOCK_ITEMS}
+    changed = 0
+    for item in db.execute(
+        select(StockItem).where(StockItem.property_id == prop.id)
+    ).scalars():
+        base = baseline.get(item.code)
+        if base is None or item.average_cost == base:
+            continue
+        item.average_cost = base
+        item.last_purchase_cost = base
+        changed += 1
+    db.flush()
+    # قيمة الرصيد محسوبة من التكلفة، فلازم تتبني تاني بعد التعديل
+    stock_svc.rebuild_levels(db, prop.id)
+    db.flush()
+    return changed
+
+
 # ═══════════════════════════════════════════════════ دليل الحسابات
 #: (كود، عربي، إنجليزي، النوع، طرفي؟)
 #: الترقيم المصري المتعارف عليه: 1 أصول · 2 التزامات · 3 ملكية · 4 إيراد · 5 مصروف
@@ -1478,7 +1509,9 @@ def create_channels(
 
 
 # ═══════════════════════════════════════════════════════════ التشغيل
-def run(years_back: int = 2, months_forward: int = 6) -> None:
+def run(
+    years_back: int = 2, months_forward: int = 6, reset_costs: bool = False
+) -> None:
     Base.metadata.create_all(engine)
     db = SessionLocal()
     try:
@@ -1522,6 +1555,11 @@ def run(years_back: int = 2, months_forward: int = 6) -> None:
         print("المخازن والموردين والأصناف...")
         made_wh, made_sup, made_item = create_warehouses(db, prop, outlets)
 
+        reset_items = 0
+        if reset_costs:
+            print("رجوع تكاليف الأصناف لأسعار البذرة...")
+            reset_items = reset_stock_costs(db, prop)
+
         print("دليل الحسابات ومراكز التكلفة...")
         made_accounts, made_centers = create_chart_of_accounts(db, prop, outlets)
 
@@ -1560,6 +1598,8 @@ def run(years_back: int = 2, months_forward: int = 6) -> None:
         print(f"  المخازن              {made_wh}  ·  موردين {made_sup}  ·  أصناف {made_item}")
         print(f"  دليل الحسابات        {made_accounts}  ·  مراكز تكلفة {made_centers}")
         print(f"  الأقسام              {made_departments}  ·  العاملون {made_staff}")
+        if reset_costs:
+            print(f"  تكاليف اترجّعت       {reset_items} صنف")
         print(f"  أسعار منشورة         {published:,}")
         print(f"  صفوف عدّاد الإتاحة   {slots:,}")
         print("─" * 52)
@@ -1570,4 +1610,8 @@ def run(years_back: int = 2, months_forward: int = 6) -> None:
 
 
 if __name__ == "__main__":
-    run()
+    import sys
+
+    # ``--reset-costs`` بيرجّع متوسط تكلفة الأصناف لأسعار البذرة. مطلوب
+    # بعد تشغيلات اختبار كتير لأنها بتستلم بضاعة بسعر أعلى فالمتوسط بيتراكم.
+    run(reset_costs="--reset-costs" in sys.argv)

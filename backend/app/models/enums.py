@@ -127,14 +127,20 @@ class MovementKind(StrEnum):
     ISSUE = "ISSUE"                  # صرف للاستهلاك (بيتولّد من الوصفة)
     TRANSFER_OUT = "TRANSFER_OUT"    # تحويل لمخزن تاني
     TRANSFER_IN = "TRANSFER_IN"
-    ADJUSTMENT = "ADJUSTMENT"        # تسوية بعد الجرد
-    WASTE = "WASTE"                  # هالك أو تالف
+    #: تسوية بالزيادة بعد الجرد — النقص بيتسجّل ``WASTE``
+    ADJUSTMENT = "ADJUSTMENT"
+    WASTE = "WASTE"                  # هالك أو تالف أو نقص بالجرد
     RETURN = "RETURN"                # مرتجع للمورد
 
 
-#: الحركات اللي بتزوّد الرصيد — الباقي بيقلّله
+#: الحركات اللي بتزوّد الرصيد — الباقي بيقلّله.
+#:
+#: ``ADJUSTMENT`` منها لأن التسوية مبتتسجّلش إلا لما الجرد يلاقي **زيادة**؛
+#: النقص بيتسجّل ``WASTE``. من غير كده كان الرصيد المخزّن يقول رقم
+#: والرصيد المحسوب من الحركات يقول رقم تاني — يعني شبكة الأمان نفسها
+#: بتكدب.
 INBOUND_MOVEMENTS: frozenset[MovementKind] = frozenset(
-    {MovementKind.PURCHASE, MovementKind.TRANSFER_IN}
+    {MovementKind.PURCHASE, MovementKind.TRANSFER_IN, MovementKind.ADJUSTMENT}
 )
 
 

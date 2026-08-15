@@ -289,6 +289,15 @@ def main() -> int:  # noqa: PLR0915 — اختبار تدفّق، الطول م�
     check("المخزون في الميزانية = المخزون في المخازن",
           money(book + supplies) == money(real),
           f"دفتر {money(book + supplies):,} · مخازن {money(real):,}")
+    reval = db.execute(
+        select(JournalEntry).where(
+            JournalEntry.property_id == prop.id,
+            JournalEntry.source_key == f"REVAL:{today}",
+        )
+    ).scalar_one_or_none()
+    check("فرق التقييم بيترحّل بقيد مش بيتسكت عنه",
+          reval is None or reval.total_debit > 0,
+          reval.number if reval else "مفيش فرق")
 
     print("\n─── كشف الأستاذ ───")
     cash_account = db.execute(
