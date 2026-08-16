@@ -274,6 +274,123 @@ class TaskEventKind(StrEnum):
     MINIBAR = "MINIBAR"                 # ترحيل ميني بار
 
 
+# ------------------------------------------------- السبا والأنشطة
+class ServiceCategory(StrEnum):
+    """نوع الخدمة — بيحدّد الحساب اللي بتترحّل عليه وشكل الحجز."""
+
+    SPA = "SPA"                      # مساج وعلاجات
+    ACTIVITY = "ACTIVITY"            # أنشطة داخل القرية
+    EXCURSION = "EXCURSION"          # رحلات بره
+    KIDS = "KIDS"                    # نادي الأطفال
+    FITNESS = "FITNESS"              # جيم وكلاسات
+    RENTAL = "RENTAL"                # تأجير (دراجات، كياك)
+
+
+class ResourceKind(StrEnum):
+    """المورد اللي الحجز بيستهلكه — ده اللي بيمنع الحجز المزدوج."""
+
+    STAFF = "STAFF"                  # معالج، مدرّب، مرشد
+    ROOM = "ROOM"                    # كابينة، قاعة يوجا
+    EQUIPMENT = "EQUIPMENT"          # قارب، كياك، دراجة
+
+
+class ServiceBookingStatus(StrEnum):
+    REQUESTED = "REQUESTED"          # طلب لسه ماتأكدش
+    CONFIRMED = "CONFIRMED"          # مؤكد والمورد محجوز
+    CHECKED_IN = "CHECKED_IN"        # النزيل حضر
+    COMPLETED = "COMPLETED"          # اتنفّذت واترحّلت
+    NO_SHOW = "NO_SHOW"              # محضرش
+    CANCELLED = "CANCELLED"
+
+
+#: الحالات اللي بتحجز المورد فعلياً — أي حجز تاني عليها بيترفض
+BLOCKING_SERVICE_STATUSES: frozenset[ServiceBookingStatus] = frozenset(
+    {
+        ServiceBookingStatus.REQUESTED,
+        ServiceBookingStatus.CONFIRMED,
+        ServiceBookingStatus.CHECKED_IN,
+    }
+)
+
+
+# ------------------------------------------------------- المناسبات
+class VenueKind(StrEnum):
+    HALL = "HALL"                    # قاعة مغطاة
+    LAWN = "LAWN"                    # حديقة
+    BEACH = "BEACH"                  # على البحيرة
+    TERRACE = "TERRACE"              # تراس
+    MEETING = "MEETING"              # قاعة اجتماعات
+
+
+class EventKind(StrEnum):
+    WEDDING = "WEDDING"              # فرح
+    ENGAGEMENT = "ENGAGEMENT"        # خطوبة
+    BIRTHDAY = "BIRTHDAY"
+    CORPORATE = "CORPORATE"          # يوم شركة
+    CONFERENCE = "CONFERENCE"
+    OTHER = "OTHER"
+
+
+class EventStatus(StrEnum):
+    INQUIRY = "INQUIRY"              # استعلام — المكان مش محجوز
+    TENTATIVE = "TENTATIVE"          # مبدئي — المكان محجوز مؤقتاً
+    CONFIRMED = "CONFIRMED"          # مؤكد بعربون
+    RUNNING = "RUNNING"              # اليوم ده
+    COMPLETED = "COMPLETED"
+    CANCELLED = "CANCELLED"
+    LOST = "LOST"                    # راح لمكان تاني — بيتحسب في التقارير
+
+
+#: الحالات اللي بتقفل المكان قدام أي مناسبة تانية
+BLOCKING_EVENT_STATUSES: frozenset[EventStatus] = frozenset(
+    {
+        EventStatus.TENTATIVE,
+        EventStatus.CONFIRMED,
+        EventStatus.RUNNING,
+    }
+)
+
+
+class EventItemKind(StrEnum):
+    """بنود ورقة التشغيل — Banquet Event Order."""
+
+    VENUE = "VENUE"                  # إيجار المكان
+    FNB = "FNB"                      # بوفيه ومشروبات
+    EQUIPMENT = "EQUIPMENT"          # صوت وإضاءة وشاشات
+    DECOR = "DECOR"                  # تنسيق
+    STAFF = "STAFF"                  # عمالة إضافية
+    ACCOMMODATION = "ACCOMMODATION"  # غرف للضيوف
+    OTHER = "OTHER"
+
+
+# ---------------------------------------------------- علاقات النزلاء
+class FeedbackChannel(StrEnum):
+    """جه منين — بيفرق في سرعة الرد وفي اللي بيشوفه الناس."""
+
+    IN_HOUSE = "IN_HOUSE"            # شكوى وهو نازل
+    EMAIL = "EMAIL"
+    PHONE = "PHONE"
+    GOOGLE = "GOOGLE"                # مراجعة عامة
+    BOOKING_COM = "BOOKING_COM"
+    SOCIAL = "SOCIAL"
+    SURVEY = "SURVEY"                # استبيان بعد المغادرة
+
+
+class FeedbackKind(StrEnum):
+    COMPLAINT = "COMPLAINT"          # شكوى
+    COMPLIMENT = "COMPLIMENT"        # ثناء
+    SUGGESTION = "SUGGESTION"
+    REVIEW = "REVIEW"                # تقييم بنجوم
+
+
+class FeedbackStatus(StrEnum):
+    OPEN = "OPEN"                    # وصلت ومحدش ردّ
+    ACKNOWLEDGED = "ACKNOWLEDGED"    # اترد عليها
+    RESOLVED = "RESOLVED"            # اتحلّت
+    ESCALATED = "ESCALATED"          # طلعت للإدارة
+    CLOSED = "CLOSED"
+
+
 class SyncOutcome(StrEnum):
     """نتيجة عملية جاية من الطابور الأوفلاين.
 

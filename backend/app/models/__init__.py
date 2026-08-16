@@ -78,6 +78,16 @@ from app.models.security import (
     role_permission,
     user_role,
 )
+from app.models.leisure import (
+    EventBooking,
+    EventItem,
+    GuestFeedback,
+    Service,
+    ServiceBooking,
+    ServiceResourceItem,
+    Venue,
+    service_resource,
+)
 from app.models.tasks import FieldPhoto, HousekeepingTask, TaskEvent
 from app.models.units import Unit, UnitCategory, UnitStatusLog
 
@@ -101,6 +111,15 @@ __all__ = [
     "HousekeepingTask",
     "FieldPhoto",
     "TaskEvent",
+    # السبا والأنشطة والمناسبات
+    "Service",
+    "ServiceResourceItem",
+    "ServiceBooking",
+    "service_resource",
+    "Venue",
+    "EventBooking",
+    "EventItem",
+    "GuestFeedback",
     # rates
     "CancellationPolicy",
     "RatePlan",

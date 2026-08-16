@@ -1549,3 +1549,248 @@ export type FieldTimelineEntry = {
   note: string | null;
   payload: Record<string, unknown> | null;
 };
+
+// ═══════════════════════════════════════════ السبا والأنشطة والمناسبات
+export type LeisureResource = {
+  id: number;
+  code: string;
+  kind: "STAFF" | "ROOM" | "EQUIPMENT";
+  name_ar: string;
+  name_en: string;
+  capacity: number;
+  shift_start: string | null;
+  shift_end: string | null;
+  is_active: boolean;
+};
+
+export type LeisureService = {
+  id: number;
+  code: string;
+  name_ar: string;
+  name_en: string;
+  category: "SPA" | "ACTIVITY" | "EXCURSION" | "KIDS" | "FITNESS" | "RENTAL";
+  duration_minutes: number;
+  buffer_minutes: number;
+  price: string;
+  price_child: string;
+  unit_cost: string;
+  capacity: number;
+  requires_resource: boolean;
+  opens_at: string | null;
+  closes_at: string | null;
+  description_ar: string | null;
+  is_active: boolean;
+  resources: LeisureResource[];
+  margin_percent: string;
+};
+
+export type LeisureSlot = {
+  start_at: string;
+  end_at: string;
+  resource_id: number;
+  resource_name: string;
+  seats_left: number;
+};
+
+export type LeisureBooking = {
+  id: number;
+  number: string;
+  service_id: number;
+  service_name_ar: string;
+  category: string;
+  resource_id: number | null;
+  resource_name: string | null;
+  guest_id: number | null;
+  guest_name: string;
+  folio_id: number | null;
+  start_at: string;
+  end_at: string;
+  business_date: string;
+  status: "REQUESTED" | "CONFIRMED" | "CHECKED_IN" | "COMPLETED" | "NO_SHOW" | "CANCELLED";
+  adults: number;
+  children: number;
+  unit_price: string;
+  total: string;
+  is_posted: boolean;
+  notes: string | null;
+  cancelled_reason: string | null;
+};
+
+export type LeisureBoard = {
+  business_date: string;
+  bookings: number;
+  confirmed: number;
+  checked_in: number;
+  completed: number;
+  cancelled: number;
+  no_shows: number;
+  guests: number;
+  revenue: string;
+  posted: string;
+  rows: LeisureBooking[];
+};
+
+export type VenueOut = {
+  id: number;
+  code: string;
+  name_ar: string;
+  name_en: string;
+  kind: string;
+  capacity_seated: number;
+  capacity_standing: number;
+  area_sqm: number | null;
+  day_rate: string;
+  hourly_rate: string;
+  minimum_spend: string;
+  description_ar: string | null;
+  is_active: boolean;
+};
+
+export type EventItemOut = {
+  id: number;
+  kind: string;
+  description_ar: string;
+  description_en: string | null;
+  quantity: string;
+  unit_price: string;
+  total: string;
+  is_complimentary: boolean;
+  note: string | null;
+};
+
+export type EventOut = {
+  id: number;
+  number: string;
+  venue_id: number;
+  venue_name_ar: string;
+  title: string;
+  kind: string;
+  status: "INQUIRY" | "TENTATIVE" | "CONFIRMED" | "RUNNING" | "COMPLETED" | "CANCELLED" | "LOST";
+  client_name: string;
+  client_phone: string | null;
+  client_email: string | null;
+  start_at: string;
+  end_at: string;
+  event_date: string;
+  pax: number;
+  package_per_person: string;
+  venue_charge: string;
+  items_total: string;
+  subtotal: string;
+  service_charge: string;
+  tax: string;
+  grand_total: string;
+  deposit_required: string;
+  deposit_paid: string;
+  deposit_outstanding: string;
+  option_until: string | null;
+  notes: string | null;
+  setup_notes: string | null;
+  lost_reason: string | null;
+  cancelled_reason: string | null;
+  items: EventItemOut[];
+};
+
+export type EventsBoard = {
+  inquiries: number;
+  tentative: number;
+  confirmed: number;
+  completed: number;
+  lost: number;
+  cancelled: number;
+  pax_confirmed: number;
+  pipeline_value: string;
+  confirmed_value: string;
+  deposits_due: string;
+  options_expiring: number;
+  win_rate_percent: string;
+  events: EventOut[];
+};
+
+// ══════════════════════════════════════════════════ علاقات النزلاء
+export type CrmSegmentSummary = {
+  code: string;
+  name_ar: string;
+  name_en: string;
+  guests: number;
+  value: string;
+};
+
+export type CrmSegmentRow = {
+  guest_id: number;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  stays: number;
+  nights: number;
+  last_stay: string | null;
+  total_spend: string;
+  segments: string[];
+};
+
+export type CrmProfile = {
+  guest_id: number;
+  name: string;
+  stays: number;
+  nights: number;
+  cancellations: number;
+  no_shows: number;
+  first_stay: string | null;
+  last_stay: string | null;
+  days_since_last: number | null;
+  spend: {
+    rooms: string;
+    food: string;
+    spa: string;
+    activities: string;
+    other: string;
+    total: string;
+  };
+  average_per_stay: string;
+  average_per_night: string;
+  service_bookings: number;
+  open_feedback: number;
+  segments: string[];
+  preferences: Record<string, unknown>;
+};
+
+export type FeedbackItem = {
+  id: number;
+  number: string;
+  guest_id: number | null;
+  guest_name: string;
+  reservation_id: number | null;
+  unit_id: number | null;
+  kind: "COMPLAINT" | "COMPLIMENT" | "SUGGESTION" | "REVIEW";
+  channel: string;
+  status: "OPEN" | "ACKNOWLEDGED" | "RESOLVED" | "ESCALATED" | "CLOSED";
+  rating: number | null;
+  department: string | null;
+  subject: string;
+  body: string | null;
+  received_at: string;
+  acknowledged_at: string | null;
+  resolved_at: string | null;
+  resolution: string | null;
+  compensation: string;
+  owner_name: string | null;
+  hours_to_ack: string | null;
+  is_overdue: boolean;
+};
+
+export type FeedbackBoard = {
+  open: number;
+  acknowledged: number;
+  escalated: number;
+  resolved_30d: number;
+  complaints_30d: number;
+  compliments_30d: number;
+  overdue: number;
+  average_rating: string | null;
+  average_ack_hours: string | null;
+  average_resolve_hours: string | null;
+  compensation_30d: string;
+  ack_target_hours: number;
+  by_department: Record<string, number>;
+  items: FeedbackItem[];
+};

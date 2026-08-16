@@ -33,6 +33,8 @@ const DICT: Record<string, [string, string]> = {
   "nav.frontdesk": ["الوصول والمغادرة", "Arrivals & Departures"],
   "nav.inventory": ["الإتاحة والانتظار", "Inventory & waitlist"],
   "nav.guests": ["النزلاء", "Guests"],
+  "nav.leisure": ["السبا والمناسبات", "Spa & Events"],
+  "nav.crm": ["علاقات النزلاء", "Guest relations"],
   "nav.pos": ["الكاشير", "Point of Sale"],
   "nav.housekeeping": ["الهاوس كيبينج", "Housekeeping"],
   "nav.reports": ["التقارير", "Reports"],

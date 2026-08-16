@@ -249,3 +249,35 @@ export const IconWaves = ({ size = 22, className }: P) => (
     <path d="M2 18c2.5-2 4.5-2 7 0s4.5 2 7 0 4.5-2 6 0" />
   </svg>
 );
+
+/** السبا والأنشطة — زهرة لوتس على الماية */
+export const IconLotus = ({ size = 20, className }: P) => (
+  <svg {...base(size)} className={className} aria-hidden="true">
+    <path d="M12 5.5c1.9 2 2.6 4.2 2.6 6.4 0 2-.9 3.8-2.6 5.1-1.7-1.3-2.6-3.1-2.6-5.1 0-2.2.7-4.4 2.6-6.4Z" />
+    <path d="M9.4 11.9c-1.4-.9-3-1.2-4.6-.9.2 2.6 2 5 4.8 6 .9.3 1.7.5 2.4.5" />
+    <path d="M14.6 11.9c1.4-.9 3-1.2 4.6-.9-.2 2.6-2 5-4.8 6-.9.3-1.7.5-2.4.5" />
+  </svg>
+);
+
+/** المناسبات — كأسان */
+export const IconEvent = ({ size = 20, className }: P) => (
+  <svg {...base(size)} className={className} aria-hidden="true">
+    <path d="M4 4h6l-3 6a3 3 0 0 1-3-6ZM7 10v9M4.5 19h5" />
+    <path d="M14 4h6a3 3 0 0 1-3 6l-3-6ZM17 10v9M14.5 19h5" />
+  </svg>
+);
+
+/** علاقات النزلاء — قلب ونبض */
+export const IconHeart = ({ size = 20, className }: P) => (
+  <svg {...base(size)} className={className} aria-hidden="true">
+    <path d="M12 20s-7.2-4.3-7.2-9.2A4 4 0 0 1 12 8.4a4 4 0 0 1 7.2 2.4C19.2 15.7 12 20 12 20Z" />
+    <path d="M4.9 12.4h3l1.4-2.4 1.8 4 1.5-2.6h6" />
+  </svg>
+);
+
+/** نجمة تقييم */
+export const IconStar = ({ size = 16, className }: P) => (
+  <svg {...base(size)} className={className} aria-hidden="true">
+    <path d="m12 4 2.4 5 5.5.8-4 3.8 1 5.4-4.9-2.6-4.9 2.6 1-5.4-4-3.8 5.5-.8L12 4Z" />
+  </svg>
+);

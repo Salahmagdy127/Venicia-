@@ -17,6 +17,8 @@ const Maintenance = lazy(() => import("@/pages/Maintenance"));
 const Stock = lazy(() => import("@/pages/Stock"));
 const Accounting = lazy(() => import("@/pages/Accounting"));
 const Staff = lazy(() => import("@/pages/Staff"));
+const Leisure = lazy(() => import("@/pages/Leisure"));
+const Crm = lazy(() => import("@/pages/Crm"));
 // صفحة الحجز العامة — بره الشريط الجانبي وبره تسجيل الدخول
 const Book = lazy(() => import("@/pages/Book"));
 const Menu = lazy(() => import("@/pages/Menu"));
@@ -175,6 +177,22 @@ export default function App() {
           element={
             <Suspense fallback={<Loading />}>
               <Staff />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/leisure"
+          element={
+            <Suspense fallback={<Loading />}>
+              <Leisure />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/crm"
+          element={
+            <Suspense fallback={<Loading />}>
+              <Crm />
             </Suspense>
           }
         />

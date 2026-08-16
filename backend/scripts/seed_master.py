@@ -8,7 +8,7 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, time as dt_time, timedelta, timezone
 from decimal import Decimal
 
 from sqlalchemy import select
@@ -18,6 +18,7 @@ from app.core.security import hash_password
 from app.db.base import Base, SessionLocal, engine
 from app.models.accounting import Account, CostCenter
 from app.models.channels import Channel, ChannelMapping
+from app.models.leisure import Service, ServiceResourceItem, Venue
 from app.models.maintenance import MinibarItem
 from app.models.stock import StockItem, Supplier, Warehouse
 from app.models.enums import (
@@ -28,6 +29,9 @@ from app.models.enums import (
     MealPlan,
     OutletType,
     RateRuleType,
+    ResourceKind,
+    ServiceCategory,
+    VenueKind,
     StockUnit,
     UnitCondition,
     UnitKind,
@@ -141,6 +145,9 @@ PERMISSIONS: list[tuple[str, str, str, str]] = [
     ("payroll.view", "payroll", "عرض المرتبات", "View payroll"),
     ("payroll.run", "payroll", "حساب مسيّر المرتبات", "Run payroll"),
     ("payroll.approve", "payroll", "اعتماد وصرف المرتبات", "Approve & pay payroll"),
+    ("leisure.view", "leisure", "عرض السبا والمناسبات", "View spa & events"),
+    ("leisure.book", "leisure", "حجز مواعيد السبا والأنشطة", "Book spa & activities"),
+    ("leisure.manage", "leisure", "إدارة المناسبات والأسعار", "Manage events & pricing"),
     ("admin.users", "admin", "إدارة المستخدمين", "Manage users"),
     ("admin.settings", "admin", "إعدادات النظام", "System settings"),
 ]
@@ -172,6 +179,8 @@ ROLES: list[tuple[str, str, str, int, list[str]]] = [
             "rate.view", "folio.view", "folio.post", "folio.settle",
             "housekeeping.view", "guest.view", "guest.edit",
             "invoice.issue", "report.operational",
+            # الاستقبال بيحجز السبا والأنشطة للنزيل وهو واقف قدامه
+            "leisure.view", "leisure.book",
         ],
     ),
     (
@@ -188,6 +197,7 @@ ROLES: list[tuple[str, str, str, int, list[str]]] = [
             "housekeeping.update", "guest.view", "guest.edit",
             "invoice.issue", "invoice.cancel", "report.operational",
             "channel.view", "maintenance.view", "maintenance.manage",
+            "leisure.view", "leisure.book", "leisure.manage",
         ],
     ),
     (
@@ -1467,6 +1477,148 @@ def create_minibar(db: Session, prop: Property) -> int:
     return made
 
 
+# ═══════════════════════════════════════════ السبا والأنشطة والمناسبات
+#: (الكود، النوع، بالعربي، بالإنجليزي، السعة، بداية الوردية، نهايتها)
+RESOURCES: list[tuple[str, ResourceKind, str, str, int, str, str]] = [
+    ("TH-01", ResourceKind.STAFF, "منى عادل — معالجة", "Mona Adel", 1, "10:00", "20:00"),
+    ("TH-02", ResourceKind.STAFF, "هدى صابر — معالجة", "Hoda Saber", 1, "12:00", "22:00"),
+    ("TH-03", ResourceKind.STAFF, "عمرو حلمي — معالج", "Amr Helmy", 1, "10:00", "20:00"),
+    ("CAB-1", ResourceKind.ROOM, "كابينة ١", "Cabin 1", 1, "10:00", "22:00"),
+    ("CAB-2", ResourceKind.ROOM, "كابينة ٢ (زوجية)", "Cabin 2 (couples)", 2, "10:00", "22:00"),
+    ("YOGA", ResourceKind.ROOM, "شرفة اليوجا", "Yoga deck", 14, "06:00", "20:00"),
+    ("BOAT-1", ResourceKind.EQUIPMENT, "مركب النيل ١", "Nile boat 1", 10, "08:00", "20:00"),
+    ("BOAT-2", ResourceKind.EQUIPMENT, "مركب النيل ٢", "Nile boat 2", 8, "08:00", "20:00"),
+    ("KAYAK", ResourceKind.EQUIPMENT, "أسطول الكياك", "Kayak fleet", 6, "07:00", "18:00"),
+    ("GUIDE", ResourceKind.STAFF, "مرشد الرحلات", "Excursion guide", 20, "06:00", "18:00"),
+]
+
+#: (الكود، بالعربي، بالإنجليزي، الفئة، المدة، التجهيز، السعر، سعر الطفل،
+#:  التكلفة، السعة، الفتح، القفل، الموارد)
+SERVICES: list[tuple] = [
+    ("SPA-SWED", "مساج سويدي ٦٠ د", "Swedish massage 60min", ServiceCategory.SPA,
+     60, 20, "950", "0", "180", 1, "10:00", "22:00", ["TH-01", "TH-02", "TH-03"]),
+    ("SPA-DEEP", "مساج علاجي ٩٠ د", "Deep tissue 90min", ServiceCategory.SPA,
+     90, 20, "1400", "0", "240", 1, "10:00", "22:00", ["TH-01", "TH-03"]),
+    ("SPA-HOT", "الحجر الساخن", "Hot stone therapy", ServiceCategory.SPA,
+     75, 25, "1250", "0", "260", 1, "12:00", "22:00", ["TH-02"]),
+    ("SPA-COUP", "جلسة زوجية", "Couples ritual", ServiceCategory.SPA,
+     90, 30, "2400", "0", "480", 2, "12:00", "21:00", ["CAB-2"]),
+    ("SPA-FACE", "تنظيف بشرة", "Signature facial", ServiceCategory.SPA,
+     45, 15, "700", "0", "160", 1, "10:00", "20:00", ["TH-02", "TH-01"]),
+    ("FIT-YOGA", "يوجا الشروق", "Sunrise yoga", ServiceCategory.FITNESS,
+     60, 15, "180", "120", "40", 14, "06:00", "09:00", ["YOGA"]),
+    ("ACT-SUNSET", "رحلة الغروب بالمركب", "Sunset boat cruise", ServiceCategory.ACTIVITY,
+     90, 30, "450", "250", "110", 10, "16:00", "20:00", ["BOAT-1", "BOAT-2"]),
+    ("ACT-FISH", "رحلة صيد الفجر", "Dawn fishing trip", ServiceCategory.ACTIVITY,
+     180, 45, "800", "500", "220", 8, "05:00", "12:00", ["BOAT-2"]),
+    ("ACT-KAYAK", "كياك على البحيرة", "Lake kayaking", ServiceCategory.ACTIVITY,
+     60, 15, "300", "200", "45", 6, "07:00", "18:00", ["KAYAK"]),
+    ("EXC-FAYOUM", "رحلة وادي الريان", "Wadi El-Rayan excursion", ServiceCategory.EXCURSION,
+     360, 60, "1200", "700", "420", 20, "07:00", "18:00", ["GUIDE"]),
+    ("EXC-DESERT", "سفاري الصحرا وقت الغروب", "Desert sunset safari", ServiceCategory.EXCURSION,
+     240, 60, "900", "550", "320", 16, "14:00", "21:00", ["GUIDE"]),
+    ("KID-CLUB", "نادي الأطفال — نص يوم", "Kids club half day", ServiceCategory.KIDS,
+     240, 30, "0", "350", "90", 12, "10:00", "18:00", ["YOGA"]),
+]
+
+#: (الكود، بالعربي، بالإنجليزي، النوع، جلوس، وقوف، متر، سعر اليوم، الساعة،
+#:  الحد الأدنى للإنفاق)
+VENUES: list[tuple] = [
+    ("V-LAWN", "حديقة البحيرة", "Lakeside lawn", VenueKind.LAWN,
+     400, 600, 1200, "45000", "0", "220000"),
+    ("V-HALL", "قاعة فينيسيا الكبرى", "Venicia grand hall", VenueKind.HALL,
+     300, 450, 700, "60000", "0", "280000"),
+    ("V-BEACH", "شاطئ المناسبات", "Event beach", VenueKind.BEACH,
+     150, 250, 800, "28000", "0", "120000"),
+    ("V-TERR", "تراس الغروب", "Sunset terrace", VenueKind.TERRACE,
+     80, 120, 240, "15000", "0", "45000"),
+    ("V-MEET", "قاعة الاجتماعات", "Boardroom", VenueKind.MEETING,
+     40, 60, 90, "9000", "1500", "0"),
+]
+
+
+def _clock(value: str) -> dt_time:
+    hour, minute = value.split(":")
+    return dt_time(int(hour), int(minute))
+
+
+def create_leisure(db: Session, prop: Property) -> tuple[int, int, int]:
+    """السبا والأنشطة وأماكن المناسبات — آمن التكرار."""
+    resources = {
+        r.code: r
+        for r in db.execute(
+            select(ServiceResourceItem).where(
+                ServiceResourceItem.property_id == prop.id
+            )
+        ).scalars().all()
+    }
+    made_resources = 0
+    for code, kind, name_ar, name_en, capacity, start, end in RESOURCES:
+        if code in resources:
+            continue
+        row = ServiceResourceItem(
+            property_id=prop.id, code=code, kind=kind, name_ar=name_ar,
+            name_en=name_en, capacity=capacity,
+            shift_start=_clock(start), shift_end=_clock(end), is_active=True,
+        )
+        db.add(row)
+        resources[code] = row
+        made_resources += 1
+    db.flush()
+
+    existing_services = {
+        s.code: s
+        for s in db.execute(
+            select(Service).where(Service.property_id == prop.id)
+        ).scalars().all()
+    }
+    made_services = 0
+    for order, row in enumerate(SERVICES):
+        (code, name_ar, name_en, category, duration, buffer, price, price_child,
+         cost, capacity, opens, closes, resource_codes) = row
+        if code in existing_services:
+            continue
+        service = Service(
+            property_id=prop.id, code=code, name_ar=name_ar, name_en=name_en,
+            category=category, duration_minutes=duration, buffer_minutes=buffer,
+            price=Decimal(price), price_child=Decimal(price_child),
+            unit_cost=Decimal(cost), capacity=capacity,
+            requires_resource=True,
+            opens_at=_clock(opens), closes_at=_clock(closes),
+            sort_order=order, is_active=True,
+        )
+        service.resources = [
+            resources[c] for c in resource_codes if c in resources
+        ]
+        db.add(service)
+        made_services += 1
+    db.flush()
+
+    existing_venues = {
+        v.code for v in db.execute(
+            select(Venue).where(Venue.property_id == prop.id)
+        ).scalars().all()
+    }
+    made_venues = 0
+    for order, row in enumerate(VENUES):
+        (code, name_ar, name_en, kind, seated, standing, area, day_rate,
+         hourly, minimum) = row
+        if code in existing_venues:
+            continue
+        db.add(
+            Venue(
+                property_id=prop.id, code=code, name_ar=name_ar, name_en=name_en,
+                kind=kind, capacity_seated=seated, capacity_standing=standing,
+                area_sqm=area, day_rate=Decimal(day_rate),
+                hourly_rate=Decimal(hourly), minimum_spend=Decimal(minimum),
+                sort_order=order, is_active=True,
+            )
+        )
+        made_venues += 1
+    db.flush()
+    return made_resources, made_services, made_venues
+
+
 # ═══════════════════════════════════════════════════ القنوات والربط
 #: (المصدر، الاسم بالعربي، الاسم بالإنجليزي، العمولة، بادئة رقم الغرفة)
 CHANNELS: list[tuple[BookingSource, str, str, str, str]] = [
@@ -1599,6 +1751,9 @@ def run(
         print("الميني بار...")
         minibar_items = create_minibar(db, prop)
 
+        print("السبا والأنشطة وأماكن المناسبات...")
+        made_resources, made_services, made_venues = create_leisure(db, prop)
+
         print("القنوات وربط الغرف...")
         made_channels, mapped_rooms = create_channels(db, prop, cats, plans)
 
@@ -1625,6 +1780,10 @@ def run(
         print(f"  أصناف المنيو         {items}")
         print(f"  قنوات البيع          {made_channels}  (ربط: {mapped_rooms})")
         print(f"  أصناف الميني بار     {minibar_items}")
+        print(
+            f"  السبا والأنشطة       {made_services} خدمة  ·  {made_resources} مورد"
+            f"  ·  {made_venues} مكان مناسبات"
+        )
         print(f"  المخازن              {made_wh}  ·  موردين {made_sup}  ·  أصناف {made_item}")
         print(f"  دليل الحسابات        {made_accounts}  ·  مراكز تكلفة {made_centers}")
         print(f"  الأقسام              {made_departments}  ·  العاملون {made_staff}")

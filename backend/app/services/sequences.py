@@ -29,6 +29,9 @@ DEFAULTS: dict[str, tuple[str, int]] = {
     "PURCHASE": ("PO", 5),
     "JOURNAL": ("JV", 6),
     "PAYROLL": ("PR", 4),
+    "SERVICE": ("SB", 6),
+    "EVENT": ("EV", 5),
+    "FEEDBACK": ("FB", 5),
 }
 
 

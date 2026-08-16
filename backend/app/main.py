@@ -19,10 +19,12 @@ from app.api.v1 import (
     auth,
     booking_engine,
     channels,
+    crm,
     dashboard,
     field,
     folio,
     hr,
+    leisure,
     inventory,
     invoices,
     maintenance,
@@ -101,6 +103,8 @@ app.include_router(stock.router, prefix=settings.API_V1_PREFIX)
 app.include_router(accounting.router, prefix=settings.API_V1_PREFIX)
 app.include_router(hr.router, prefix=settings.API_V1_PREFIX)
 app.include_router(field.router, prefix=settings.API_V1_PREFIX)
+app.include_router(leisure.router, prefix=settings.API_V1_PREFIX)
+app.include_router(crm.router, prefix=settings.API_V1_PREFIX)
 app.include_router(operations.router, prefix=settings.API_V1_PREFIX)
 app.include_router(dashboard.router, prefix=settings.API_V1_PREFIX)
 
