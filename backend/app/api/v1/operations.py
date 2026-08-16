@@ -619,7 +619,16 @@ def categories(db: DbSession, user: CurrentUser, prop: CurrentProperty) -> list[
     ]
 
 
-@router.get("/rate-plans", response_model=list[RatePlanOut], summary="خطط الأسعار")
+@router.get(
+    "/rate-plans",
+    response_model=list[RatePlanOut],
+    summary="خطط الأسعار",
+    # الخطة فيها سعرها الأساسي وسياسة إلغائها — ديه معلومة تجارية.
+    # كانت مفتوحة لأي مستخدم مسجّل، وده كان بيبان بس لما دخل تطبيق
+    # الموبايل الصورة: تليفون هاوس كيبر بيتنسى على طرابيزة كان بيوصل
+    # لأسعار القرية كلها.
+    dependencies=[Depends(require("rate.view"))],
+)
 def rate_plans(db: DbSession, user: CurrentUser, prop: CurrentProperty) -> list[RatePlanOut]:
     rows = db.execute(
         select(RatePlan)

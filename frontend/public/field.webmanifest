@@ -1,0 +1,29 @@
+{
+  "id": "/field",
+  "name": "فينيسيا — تطبيق الميدان",
+  "short_name": "فينيسيا",
+  "description": "مهام التنضيف والصيانة — بيشتغل من غير شبكة",
+  "start_url": "/field",
+  "scope": "/field",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#04161a",
+  "theme_color": "#04161a",
+  "dir": "rtl",
+  "lang": "ar",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "/field-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/field-icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

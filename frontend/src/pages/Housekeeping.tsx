@@ -10,6 +10,7 @@ import { formatDate } from "@/lib/format";
 import { HK_COLOR } from "@/lib/status";
 import type { HousekeepingBoard, UnitStatus } from "@/lib/types";
 import PageHeader, { StatStrip } from "@/components/PageHeader";
+import FieldRound from "@/components/FieldRound";
 import { ErrorState, Loading, cx } from "@/components/ui";
 
 const HK_STATES = ["DIRTY", "CLEANING", "CLEAN", "INSPECTED"] as const;
@@ -21,6 +22,10 @@ export default function Housekeeping() {
   const { can } = useAuth();
   const qc = useQueryClient();
 
+  // تبويبتان: حالة الوحدات (نظرة القرية) وجولة الميدان (شغل الناس).
+  // الأولى بتقول الوحدة على إيه، والتانية بتقول اتعمل فيها إيه ومين
+  // عمله وبإثبات إيه.
+  const [tab, setTab] = useState<"units" | "round">("units");
   const [filter, setFilter] = useState<Filter>("all");
   const [toast, setToast] = useState<string | null>(null);
 
@@ -84,6 +89,33 @@ export default function Housekeeping() {
         )}
       </PageHeader>
 
+      {/* التبويبات */}
+      <div className="shrink-0 px-5 border-b border-line bg-surface flex items-center gap-1">
+        {(
+          [
+            ["units", "حالة الوحدات"],
+            ["round", "جولة الميدان"],
+          ] as const
+        ).map(([key, label]) => (
+          <button
+            key={key}
+            onClick={() => setTab(key)}
+            className={cx(
+              "h-10 px-4 text-[13.5px] font-bold border-b-2 -mb-px transition-colors",
+              tab === key
+                ? "border-accent text-accent"
+                : "border-transparent text-muted hover:text-ink-2",
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "round" && <FieldRound />}
+
+      {tab === "units" && (
+      <>
       {/* الفلاتر */}
       <div className="shrink-0 px-5 py-2.5 border-b border-line bg-surface flex items-center gap-1.5 flex-wrap">
         <Chip active={filter === "all"} onClick={() => setFilter("all")}>
@@ -132,6 +164,8 @@ export default function Housekeeping() {
           ))}
         </div>
       </div>
+      </>
+      )}
 
       {toast && (
         <div

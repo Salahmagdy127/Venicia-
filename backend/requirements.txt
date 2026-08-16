@@ -14,5 +14,9 @@ python-dateutil==2.9.0.post0
 # توليد أكواد QR — بايثون خالص من غير أي اعتماديات
 segno==1.6.1
 
+# مصغّرات صور الميدان. اختيارية فعلياً: لو مش موجودة، الرفع بيشتغل
+# والصورة الأصلية بتتعرض — اللي بيضيع هو توفير الباندويث في القايمة.
+Pillow==12.3.0
+
 # Postgres driver (production). Not required for SQLite dev.
 psycopg[binary]==3.2.3

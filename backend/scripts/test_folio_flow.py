@@ -1,6 +1,13 @@
 """اختبار حساب النزيل والتشغيل — Folio & operations flow test.
 
     python -m scripts.test_folio_flow
+
+السويت دي بتلمس فلوس حقيقية على حسابات حقيقية: بترحّل بند، وتحوّل
+حركة، وتقسّم فاتورة، وتحصّل دفعة. فلازم ترجّع كل ده في الآخر.
+
+من غير الرجوع ده كانت بتاكل من رصيد نفس الحساب كل مرة تتشغّل، ولحد
+ما الرصيد ينزل تحت مبلغ التحصيل وتفشل — مش لأن فيه باج في النظام،
+لأن الاختبار نفسه كان بيغيّر الدنيا اللي بيقيسها.
 """
 
 from __future__ import annotations
@@ -9,8 +16,12 @@ from datetime import date, timedelta
 from decimal import Decimal
 
 from fastapi.testclient import TestClient
+from sqlalchemy import delete, func, select
 
+from app.db.base import SessionLocal
 from app.main import app
+from app.models.folio import Folio, FolioLine, Payment
+from app.services import folio as folio_svc
 
 PASS, FAIL = "  [OK]  ", "  [FAIL]"
 failures: list[str] = []
@@ -38,6 +49,12 @@ def main() -> int:
 
     desk = login("nourhan")
     owner = login("owner")
+
+    # علامة على الحالة قبل ما نلمس حاجة — كل صف اتعمل بعدها بيتشال
+    db = SessionLocal()
+    line_mark = db.execute(select(func.coalesce(func.max(FolioLine.id), 0))).scalar_one()
+    payment_mark = db.execute(select(func.coalesce(func.max(Payment.id), 0))).scalar_one()
+    folio_mark = db.execute(select(func.coalesce(func.max(Folio.id), 0))).scalar_one()
 
     # ── اتساق الأرصدة ───────────────────────────────────────────────
     folios = client.get("/api/v1/folios", headers=desk).json()
@@ -100,12 +117,15 @@ def main() -> int:
     check("الويتر ممنوع يرحّل على حساب نزيل", r.status_code == 403, f"HTTP {r.status_code}")
 
     # ── التحصيل ─────────────────────────────────────────────────────
+    # المبلغ بيتحسب من الرصيد الفعلي مش رقم ثابت: أي رقم ثابت بيبقى
+    # صح على بيانات النهاردة وغلط أول ما الداتا تتغيّر
+    settled = (before / 4).quantize(Decimal("0.01"))
     r = client.post(f"/api/v1/folios/{fid}/settle",
-                    json={"method": "CASH", "amount": "1000"}, headers=desk)
+                    json={"method": "CASH", "amount": str(settled)}, headers=desk)
     check("تحصيل دفعة نقدي", r.status_code == 200, r.json().get("message_ar", ""))
     check("الرصيد نقص بالدفعة",
-          D(r.json()["folio"]["balance"]) == before - 1000,
-          f"{r.json()['folio']['balance']}")
+          D(r.json()["folio"]["balance"]) == before - settled,
+          f"{before} − {settled} = {r.json()['folio']['balance']}")
 
     r = client.post(f"/api/v1/folios/{fid}/settle",
                     json={"method": "CASH", "amount": "9999999"}, headers=desk)
@@ -126,6 +146,7 @@ def main() -> int:
         json={"target_folio_id": target}, headers=owner,
     )
     check("تحويل حركة لغرفة تانية", r.status_code == 200, f"HTTP {r.status_code}")
+    moved_line_ids: list[int] = [room_line["id"]]
 
     moved = D(room_line["total_amount"])
     new_src = D(client.get(f"/api/v1/folios/{fid}", headers=desk).json()["balance"])
@@ -145,6 +166,7 @@ def main() -> int:
                         json={"line_ids": to_split, "label": "حساب منفصل"}, headers=owner)
         check("تقسيم الفاتورة", r.status_code == 200,
               f"حساب جديد #{r.json().get('new_folio_id')}")
+        moved_line_ids.extend(to_split)
     else:
         check("تقسيم الفاتورة (مفيش حركات مطعم على الحساب ده)", True, "تخطّي")
 
@@ -195,6 +217,62 @@ def main() -> int:
     check("القواعد المطبّقة ظاهرة",
           any(n["applied_rules"] for n in q["nights_detail"]),
           " · ".join(sorted({r for n in q["nights_detail"] for r in n["applied_rules"]})))
+
+    # ── الرجوع للحالة الأصلية ───────────────────────────────────────
+    print("\n─── الرجوع للحالة الأصلية ───")
+    touched: set[int] = {fid, target}
+
+    # ١. الدفعة اللي حصّلناها بتتشال — مش دفعة حقيقية من نزيل حقيقي
+    payments = db.execute(select(Payment).where(Payment.id > payment_mark)).scalars().all()
+    touched.update(p.folio_id for p in payments if p.folio_id)
+    db.execute(delete(Payment).where(Payment.id > payment_mark))
+
+    # ٢. الحركة المحوّلة: بنشيل النسخة وبنفك علامة التحويل عن الأصل.
+    #    لو سِبنا العلامة، السطر الأصلي مش هينفع يتحوّل تاني ولا يتلغي.
+    #
+    #    وبنفك العلامة عن **السطور اللي إحنا حوّلناها بالذات**، مش عن أي
+    #    سطر محوّل ناحية نفس الحساب: الفوليو ده فيه تحويلات من شغل
+    #    حقيقي، وفكّها معناه إن الاختبار بيلغي حركات مش بتاعته.
+    copies = db.execute(select(FolioLine).where(FolioLine.id > line_mark)).scalars().all()
+    copy_ids = [c.id for c in copies]
+    touched.update(c.folio_id for c in copies)
+    for origin_id in moved_line_ids:
+        origin = db.get(FolioLine, origin_id)
+        if origin is None:
+            continue
+        origin.is_transferred = False
+        origin.transferred_to_folio_id = None
+        origin.transferred_by_user_id = None
+        touched.add(origin.folio_id)
+    if copy_ids:
+        db.execute(delete(FolioLine).where(FolioLine.id.in_(copy_ids)))
+
+    # ٣. الحساب اللي اتولد من التقسيم بيتشال بالكامل
+    split_folios = db.execute(select(Folio).where(Folio.id > folio_mark)).scalars().all()
+    if split_folios:
+        db.execute(delete(Folio).where(Folio.id > folio_mark))
+    touched -= {f.id for f in split_folios}
+
+    db.flush()
+    for folio_id in sorted(touched):
+        row = db.get(Folio, folio_id)
+        if row is not None:
+            folio_svc.recalculate(db, row)
+    db.commit()
+
+    restored = D(client.get(f"/api/v1/folios/{fid}", headers=desk).json()["balance"])
+    check("رصيد الحساب رجع زي ما كان بالظبط", restored == before,
+          f"{before} → {restored}")
+    check("الحساب اللي اتولد من التقسيم اتشال", len(split_folios) <= 1,
+          f"{len(split_folios)} حساب")
+    check("السطور المضافة اتشالت", not db.execute(
+        select(FolioLine).where(FolioLine.id > line_mark)
+    ).scalars().first(), f"{len(copy_ids)} سطر")
+    check("مفيش دفعة وهمية فضلت في الدفتر", not db.execute(
+        select(Payment).where(Payment.id > payment_mark)
+    ).scalars().first(), f"{len(payments)} دفعة")
+
+    db.close()
 
     print()
     if failures:

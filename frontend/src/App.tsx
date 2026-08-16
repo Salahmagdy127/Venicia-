@@ -20,6 +20,9 @@ const Staff = lazy(() => import("@/pages/Staff"));
 // صفحة الحجز العامة — بره الشريط الجانبي وبره تسجيل الدخول
 const Book = lazy(() => import("@/pages/Book"));
 const Menu = lazy(() => import("@/pages/Menu"));
+// تطبيق الميدان — غلاف مستقل تماماً: مفيش شريط جانبي ولا حماية الشاشات
+// الكبيرة. بيدير دخوله وحالته بنفسه لأنه بيشتغل من غير شبكة.
+const FieldApp = lazy(() => import("@/field/FieldApp"));
 const Guests = lazy(() => import("@/pages/Guests"));
 const Pos = lazy(() => import("@/pages/Pos"));
 const Housekeeping = lazy(() => import("@/pages/Housekeeping"));
@@ -76,6 +79,14 @@ export default function App() {
         element={
           <Suspense fallback={<FullScreenLoading />}>
             <Menu />
+          </Suspense>
+        }
+      />
+      <Route
+        path="/field/*"
+        element={
+          <Suspense fallback={<FullScreenLoading />}>
+            <FieldApp />
           </Suspense>
         }
       />

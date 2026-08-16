@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     # التنفيذ / production: postgresql+psycopg://user:pass@host:5432/venicia
     DATABASE_URL: str = f"sqlite:///{(BACKEND_DIR / 'venicia.db').as_posix()}"
     DB_ECHO: bool = False
+    #: مجلد صور الميدان (قبل/بعد). بره الداتابيز عن قصد — الصور بتكبر
+    #: بسرعة والنسخ الاحتياطي بتاعها ملفات مش صفوف.
+    MEDIA_ROOT: str = (BACKEND_DIR / "media").as_posix()
     DB_POOL_SIZE: int = 20
     DB_MAX_OVERFLOW: int = 10
     DB_POOL_RECYCLE: int = 1800

@@ -15,6 +15,9 @@ venv/
 *.db-shm
 *.db-journal
 
+# صور الميدان — بتتولّد وبتكبر بسرعة، ونسخها الاحتياطي ملفات مش كود
+backend/media/
+
 # Node
 node_modules/
 dist/

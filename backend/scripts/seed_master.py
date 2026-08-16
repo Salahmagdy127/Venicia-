@@ -115,6 +115,10 @@ PERMISSIONS: list[tuple[str, str, str, str]] = [
     ("pos.shift.close", "pos", "تقفيل الوردية", "Close shift"),
     ("housekeeping.view", "housekeeping", "عرض الهاوس كيبينج", "View housekeeping"),
     ("housekeeping.update", "housekeeping", "تحديث حالة الوحدة", "Update unit status"),
+    # صلاحيات تطبيق الموبايل. منفصلة عن صلاحيات الشاشات عن قصد: الهاوس
+    # كيبر بيقدر ينضّف ويصوّر من تليفونه، ومبيقدرش يفتح شاشة إدارية.
+    ("field.clean", "field", "تنفيذ مهام التنضيف من التطبيق", "Field cleaning tasks"),
+    ("field.fix", "field", "تنفيذ تذاكر الصيانة من التطبيق", "Field maintenance tickets"),
     ("guest.view", "guest", "عرض النزلاء", "View guests"),
     ("guest.edit", "guest", "تعديل بيانات النزيل", "Edit guest"),
     ("report.operational", "report", "التقارير التشغيلية", "Operational reports"),
@@ -222,7 +226,26 @@ ROLES: list[tuple[str, str, str, int, list[str]]] = [
         [
             "housekeeping.view", "housekeeping.update", "reservation.view",
             "maintenance.view", "maintenance.manage",
+            # السوبرفايزر بيشتغل من التليفون كمان — بيفحص وهو واقف
+            "field.clean", "field.fix",
         ],
+    ),
+    (
+        "HOUSEKEEPER",
+        "هاوس كيبر",
+        "Housekeeper",
+        0,
+        # الحد الأدنى المطلق: مهامي، وأصوّر، وأبلّغ عن عطل. مفيش شاشة
+        # إدارية ولا أسعار ولا حسابات نزلاء. الموبايل مش بيتحط في درج
+        # مقفول — بيتنسي على طرابيزة، فالحساب اللي عليه لازم يكون فقير.
+        ["field.clean", "maintenance.view"],
+    ),
+    (
+        "TECHNICIAN",
+        "فني صيانة",
+        "Technician",
+        0,
+        ["field.fix", "maintenance.view"],
     ),
     (
         "ACCOUNTANT",
@@ -322,6 +345,13 @@ USERS: list[tuple[str, str, str, str, str]] = [
     ("samia", "سامية جمال", "Samia Gamal", "HOUSEKEEPING", "venicia2026"),
     ("hesham", "هشام لطفي", "Hesham Lotfy", "ACCOUNTANT", "venicia2026"),
     ("nadia", "نادية القاضي", "Nadia El-Kady", "HR_MANAGER", "venicia2026"),
+    # فريق الميدان — دول اللي بيشتغلوا من التليفون
+    ("fatma", "فاطمة السيد", "Fatma El-Sayed", "HOUSEKEEPER", "venicia2026"),
+    ("zeinab", "زينب مرسي", "Zeinab Morsy", "HOUSEKEEPER", "venicia2026"),
+    ("amira", "أميرة رجب", "Amira Ragab", "HOUSEKEEPER", "venicia2026"),
+    ("shaimaa", "شيماء فؤاد", "Shaimaa Fouad", "HOUSEKEEPER", "venicia2026"),
+    ("mahmoud", "محمود عبد الحميد", "Mahmoud Abdelhamid", "TECHNICIAN", "venicia2026"),
+    ("ibrahim", "إبراهيم صابر", "Ibrahim Saber", "TECHNICIAN", "venicia2026"),
 ]
 
 

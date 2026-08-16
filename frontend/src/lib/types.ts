@@ -1474,3 +1474,78 @@ export type TapeChartData = {
     unassigned_count: number;
   };
 };
+
+// ═══════════════════════════════════════════════ مهام الميدان (التطبيق)
+export type FieldPhotoOut = {
+  id: number;
+  phase: "BEFORE" | "AFTER" | "ISSUE" | "MINIBAR";
+  url: string;
+  thumb_url: string | null;
+  taken_at: string;
+  taken_by_name: string | null;
+  note: string | null;
+};
+
+export type FieldTask = {
+  id: number;
+  unit_id: number;
+  unit_label: string;
+  zone_ar: string | null;
+  zone_en: string | null;
+  category_name_ar: string;
+  category_name_en: string;
+  task_date: string;
+  kind: string;
+  status: string;
+  priority: number;
+  expected_minutes: number;
+  working_seconds: number;
+  photos_required: boolean;
+  photo_before_count: number;
+  photo_after_count: number;
+  dnd_attempts: number;
+  snoozed_until: string | null;
+  blocked_reason: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  linen_changed: boolean;
+  amenities_restocked: boolean;
+  minibar_checked: boolean;
+  inspection_score: number | null;
+  inspection_note: string | null;
+  note: string | null;
+  assigned_to_user_id: number | null;
+  assigned_to_name: string | null;
+  ticket_id: number | null;
+  has_minibar: boolean;
+  is_occupied: boolean;
+  photos: FieldPhotoOut[];
+};
+
+export type FieldSupervisorBoard = {
+  business_date: string;
+  total: number;
+  pending: number;
+  in_progress: number;
+  dnd: number;
+  blocked: number;
+  done: number;
+  inspected: number;
+  skipped: number;
+  unassigned: number;
+  escalated: number;
+  minutes_planned: number;
+  minutes_worked: number;
+  photos: number;
+  tasks: FieldTask[];
+};
+
+export type FieldTimelineEntry = {
+  kind: string;
+  happened_at: string;
+  received_at: string;
+  offline_seconds: number;
+  user_name: string | null;
+  note: string | null;
+  payload: Record<string, unknown> | null;
+};

@@ -78,6 +78,7 @@ from app.models.security import (
     role_permission,
     user_role,
 )
+from app.models.tasks import FieldPhoto, HousekeepingTask, TaskEvent
 from app.models.units import Unit, UnitCategory, UnitStatusLog
 
 __all__ = [
@@ -96,6 +97,10 @@ __all__ = [
     "UnitCategory",
     "Unit",
     "UnitStatusLog",
+    # مهام الميدان
+    "HousekeepingTask",
+    "FieldPhoto",
+    "TaskEvent",
     # rates
     "CancellationPolicy",
     "RatePlan",

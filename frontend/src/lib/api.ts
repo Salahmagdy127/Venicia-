@@ -64,8 +64,11 @@ export async function api<T>(path: string, options: Options = {}): Promise<T> {
 
   if (res.status === 401) {
     setToken(null);
-    // إعادة التوجيه لصفحة الدخول بدون كسر التطبيق
-    if (!location.pathname.startsWith("/login")) location.href = "/login";
+    // إعادة التوجيه لصفحة الدخول بدون كسر التطبيق. تطبيق الميدان ليه
+    // شاشة دخول خاصة بيه — لو رمينا الهاوس كيبر على شاشة النظام
+    // الكاملة هيلاقي نفسه في مكان تاني خالص وشغله في الطابور.
+    const field = location.pathname.startsWith("/field");
+    if (!field && !location.pathname.startsWith("/login")) location.href = "/login";
     throw new ApiError(401, { ar: "الجلسة انتهت", en: "Session expired" });
   }
 

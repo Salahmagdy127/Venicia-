@@ -203,6 +203,91 @@ OPEN_TICKET_STATUSES: frozenset[TicketStatus] = frozenset(
 )
 
 
+# ------------------------------------------------- مهام الميدان (التطبيق)
+class TaskKind(StrEnum):
+    """نوع المهمة — بيحدّد الوقت المتوقّع وترتيب الأولوية في الجولة."""
+
+    DEPARTURE = "DEPARTURE"          # تنضيف بعد المغادرة — الأعلى أولوية
+    ARRIVAL_PREP = "ARRIVAL_PREP"    # تجهيز قبل وصول نزيل النهاردة
+    STAYOVER = "STAYOVER"            # نزيل مقيم — ترتيب يومي
+    TURNDOWN = "TURNDOWN"            # ترتيب مسائي
+    DEEP = "DEEP"                    # تنضيف عميق
+    POST_MAINTENANCE = "POST_MAINTENANCE"  # بعد ما الفني يخلص
+    INSPECTION = "INSPECTION"        # جولة السوبرفايزر
+
+
+class TaskStatus(StrEnum):
+    """حالة المهمة.
+
+    ``DND`` مش «فشل»: النزيل معلّق «عدم إزعاج» وده حقه. المهمة بتفضل
+    في القايمة وبترجع تاني بعد فترة، والسوبرفايزر بيشوف كام مرة اتحاولت.
+    """
+
+    PENDING = "PENDING"              # في الطابور
+    IN_PROGRESS = "IN_PROGRESS"      # الشغل بدأ
+    DND = "DND"                      # عدم إزعاج — مؤجلة
+    BLOCKED = "BLOCKED"              # مش قادر يدخل لسبب تاني
+    DONE = "DONE"                    # خلصت وف انتظار الفحص
+    INSPECTED = "INSPECTED"          # السوبرفايزر فحصها وقبلها
+    REJECTED = "REJECTED"            # الفحص رفضها — بترجع للطابور
+    SKIPPED = "SKIPPED"              # اتلغت بقرار
+
+
+#: المهام اللي لسه على الهاوس كيبر — بتظهر في تليفونه
+LIVE_TASK_STATUSES: frozenset[TaskStatus] = frozenset(
+    {TaskStatus.PENDING, TaskStatus.IN_PROGRESS, TaskStatus.DND, TaskStatus.BLOCKED,
+     TaskStatus.REJECTED}
+)
+
+#: المهام اللي اتقفلت — مبتظهرش في الجولة
+CLOSED_TASK_STATUSES: frozenset[TaskStatus] = frozenset(
+    {TaskStatus.DONE, TaskStatus.INSPECTED, TaskStatus.SKIPPED}
+)
+
+
+class PhotoPhase(StrEnum):
+    """الصورة اتاخدت إمتى — ده اللي بيخلّي «قبل وبعد» تبقى دليل مش صور."""
+
+    BEFORE = "BEFORE"                # قبل ما يبدأ
+    AFTER = "AFTER"                  # بعد ما خلص
+    ISSUE = "ISSUE"                  # عطل أو تلفية لقاها
+    MINIBAR = "MINIBAR"              # جرد الميني بار
+
+
+class TaskEventKind(StrEnum):
+    """اللي حصل في المهمة — سجل بالإضافة فقط، بيتبني من تليفون الموظف."""
+
+    CREATED = "CREATED"
+    ASSIGNED = "ASSIGNED"
+    STARTED = "STARTED"
+    PAUSED = "PAUSED"
+    RESUMED = "RESUMED"
+    DND = "DND"
+    BLOCKED = "BLOCKED"
+    COMPLETED = "COMPLETED"
+    INSPECTED = "INSPECTED"
+    REJECTED = "REJECTED"
+    SKIPPED = "SKIPPED"
+    PHOTO = "PHOTO"
+    NOTE = "NOTE"
+    ISSUE_REPORTED = "ISSUE_REPORTED"   # فتح تذكرة صيانة من التطبيق
+    MINIBAR = "MINIBAR"                 # ترحيل ميني بار
+
+
+class SyncOutcome(StrEnum):
+    """نتيجة عملية جاية من الطابور الأوفلاين.
+
+    ``DUPLICATE`` مش خطأ: التليفون بيعيد البعت لما الشبكة ترجع، والسيرفر
+    بيرد إن العملية اتسجّلت قبل كده — فالتليفون يمسحها من الطابور مطمن.
+    """
+
+    APPLIED = "APPLIED"              # اتنفّذت دلوقتي
+    DUPLICATE = "DUPLICATE"          # اتنفّذت قبل كده بنفس المعرّف
+    CONFLICT = "CONFLICT"            # الحالة اتغيّرت من حد تاني
+    REJECTED = "REJECTED"            # مرفوضة (صلاحية أو بيانات ناقصة)
+    FAILED = "FAILED"                # خطأ فني — التليفون يعيد المحاولة
+
+
 # ------------------------------------------------------- الربط بالقنوات
 class ChannelMessageKind(StrEnum):
     """نوع الرسالة الطالعة للقناة."""
